@@ -1,0 +1,33 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOME=/home/searxng \
+    SEARXNG_MCP_CACHE_DIR=/data/cache \
+    SEARXNG_MCP_RENDER_BROWSER_PATH=/usr/bin/chromium \
+    SEARXNG_MCP_RENDER_SANDBOX=1 \
+    SEARXNG_MCP_TRANSPORT=streamable-http \
+    SEARXNG_MCP_HOST=0.0.0.0 \
+    SEARXNG_MCP_PORT=8811
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends chromium chromium-sandbox ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+
+RUN python -m pip install --no-cache-dir --upgrade pip && \
+    python -m pip install --no-cache-dir '.[render]' && \
+    useradd --create-home --home-dir /home/searxng --shell /usr/sbin/nologin searxng && \
+    mkdir -p /data/cache /home/searxng/.cache /home/searxng/.config && \
+    chown -R searxng:searxng /app /data /home/searxng
+
+USER searxng
+
+EXPOSE 8811
+
+ENTRYPOINT ["searxng-mcp"]
+CMD ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8811"]

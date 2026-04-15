@@ -1,0 +1,31 @@
+site_name: searxng-mcp
+site_description: Fast, token-efficient MCP server for SearXNG
+site_author: andrew
+use_directory_urls: true
+strict: true
+
+theme:
+  name: readthedocs
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Overview: index.md
+  - Getting Started: getting-started.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Deployment: deployment.md
+  - Security: security.md
+  - Tool Reference: reference/tools.md
+  - Client Configs: reference/client-configs.md
+  - Benchmarks: benchmarks.md
+  - FAQ: faq.md
+  - Comparison: comparison.md
+  - Changelog: changelog.md
