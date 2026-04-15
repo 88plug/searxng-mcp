@@ -4,16 +4,16 @@
 
 ## uvx
 
-After the package is published to PyPI, the intended one-line install is:
+`searxng-mcp` is distributed straight from the GitHub repository — there is no PyPI release. The one-line install is:
 
 ```bash
-uvx searxng-mcp --help
+uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp --help
 ```
 
-If you need rendered fetch support, install the render extra:
+If you need rendered fetch support, request the `render` extra via PEP 508 direct-reference syntax:
 
 ```bash
-uvx --from 'searxng-mcp[render]' searxng-mcp --help
+uvx --from "searxng-mcp[render] @ git+https://github.com/88plug/searxng-mcp" searxng-mcp --help
 ```
 
 ## From Source

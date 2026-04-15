@@ -18,6 +18,10 @@ The project follows a simple release log:
 - Docker and hardened Docker deployment paths for self-hosting.
 - Benchmark tooling for latency and tool-payload checks.
 
+### Changed
+
+- Distribution is via git source (`uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp`); no PyPI publication is planned. The bare `searxng-mcp` name on PyPI is held by an unrelated project.
+
 ### Security
 
 - The server is designed for trusted self-hosting.

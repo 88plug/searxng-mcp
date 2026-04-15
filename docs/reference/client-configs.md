@@ -4,6 +4,8 @@ These examples show the common ways to point MCP clients at `searxng-mcp`.
 
 ## Claude Desktop
 
+If `searxng-mcp` is already on your `PATH` (e.g. via `uv sync` from a checkout):
+
 ```json
 {
   "mcpServers": {
@@ -17,7 +19,21 @@ These examples show the common ways to point MCP clients at `searxng-mcp`.
 }
 ```
 
-If you installed the package through `uvx`, the command can be the published executable instead of a repo-local path.
+To run straight from the GitHub source without any local install, point `uvx` at the repo:
+
+```json
+{
+  "mcpServers": {
+    "searxng-mcp": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/88plug/searxng-mcp", "searxng-mcp"],
+      "env": {
+        "SEARXNG_MCP_BASE_URL": "http://127.0.0.1:8890"
+      }
+    }
+  }
+}
+```
 
 ## Codex
 

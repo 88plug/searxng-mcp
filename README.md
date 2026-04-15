@@ -29,10 +29,16 @@ uv run searxng-mcp
 
 ### Install with `uvx`
 
-After publishing to PyPI, the shortest path will be:
+`searxng-mcp` is distributed from this repository (no PyPI release). The shortest path is:
 
 ```bash
-uvx searxng-mcp
+uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp
+```
+
+For rendered fetch support, request the `render` extra:
+
+```bash
+uvx --from "searxng-mcp[render] @ git+https://github.com/88plug/searxng-mcp" searxng-mcp
 ```
 
 ### Run with Docker
@@ -51,7 +57,7 @@ docker run --rm -p 8811:8811 --add-host=host.docker.internal:host-gateway \
   "mcpServers": {
     "searxng-mcp": {
       "command": "uvx",
-      "args": ["searxng-mcp"],
+      "args": ["--from", "git+https://github.com/88plug/searxng-mcp", "searxng-mcp"],
       "env": {
         "SEARXNG_MCP_BASE_URL": "http://127.0.0.1:8890",
         "SEARXNG_MCP_TRANSPORT": "stdio"
