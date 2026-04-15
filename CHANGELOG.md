@@ -21,6 +21,10 @@ The project follows a simple release log:
 ### Changed
 
 - Distribution is via git source (`uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp`); no PyPI publication is planned. The bare `searxng-mcp` name on PyPI is held by an unrelated project.
+- LM-callability hardening across every tool: multi-paragraph descriptions following the `purpose / Best for / Returns / sibling-routing` template, per-parameter `Annotated[T, Field(description=...)]` with constraints (`Literal` enums for `time_range` and `safesearch`, numeric ranges on `pageno`/`max_results`/`fetch_limit`/`concurrency`/`ttl`, length caps on `query`/`urls`). Schemas stay inside the OpenAPI 3.0 intersection that Codex CLI, gemini-cli, opencode, and Claude Code all accept (no `$defs`/`$ref`, no `oneOf`, no nested input models). Pydantic validation now rejects invalid input with messages naming valid values, instead of silently coercing.
+- Tool annotations set on every tool (`readOnlyHint=True`, `destructiveHint=False`, `openWorldHint=True` for search/fetch; `idempotentHint=True` only on the deterministic fetch tools).
+- Prompt arguments use `Literal[...]` so invalid `intent`/`scope`/`depth` values raise instead of falling back silently.
+- `docs/reference/client-configs.md` rewritten with copy-paste config for Claude Code, Codex CLI, gemini-cli, sst/opencode, and streamable-http.
 
 ### Security
 

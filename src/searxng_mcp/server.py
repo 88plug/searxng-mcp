@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Annotated, Literal
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from . import __version__
 from .service import SearxngMCPService
@@ -15,21 +18,302 @@ class MCPBundle:
     service: SearxngMCPService
 
 
+SERVER_INSTRUCTIONS = (
+    "Token-efficient MCP access to SearXNG. The model should choose tools autonomously. "
+    "Pick `search` for one query and a compact answer; `search_many` to fan out across query "
+    "variants and merge results; `search_and_fetch` when one query needs source extraction; "
+    "`research` for multi-query investigations that need merged sources and citations; "
+    "`fetch_url` and `fetch_many` to read pages you already have URLs for; `health` to check "
+    "the backend. Rendered fetch is automatic for JS-heavy pages; pass `rendered=true` to force it. "
+    "All visible output is intentionally compact; full raw payloads are returned in hidden `_meta`. "
+    "Resources `searxng://config` and `searxng://guide` describe the runtime and intended workflow."
+)
+
+CategoriesParam = Annotated[
+    str | None,
+    Field(
+        default=None,
+        description=(
+            "Comma-separated SearXNG categories to search (e.g. 'general', 'news', 'images', "
+            "'videos', 'science', 'files'). Default is the server's configured category set, "
+            "typically 'general'."
+        ),
+    ),
+]
+
+EnginesParam = Annotated[
+    str | None,
+    Field(
+        default=None,
+        description=(
+            "Comma-separated SearXNG engine names to use for this query. Forwarded to SearXNG's "
+            "'engines' parameter. Leave unset to use the backend's default engine selection."
+        ),
+    ),
+]
+
+EnabledEnginesParam = Annotated[
+    str | None,
+    Field(
+        default=None,
+        description=(
+            "Comma-separated engine names to enable in addition to the backend defaults. "
+            "Forwarded as SearXNG's 'enabled_engines' parameter."
+        ),
+    ),
+]
+
+DisabledEnginesParam = Annotated[
+    str | None,
+    Field(
+        default=None,
+        description=(
+            "Comma-separated engine names to exclude from this query. Forwarded as SearXNG's "
+            "'disabled_engines' parameter."
+        ),
+    ),
+]
+
+LanguageParam = Annotated[
+    str | None,
+    Field(
+        default=None,
+        description=(
+            "BCP-47 language hint for SearXNG (e.g. 'en', 'en-US', 'de', 'all'). Default is the "
+            "server's configured language."
+        ),
+    ),
+]
+
+PageNoParam = Annotated[
+    int,
+    Field(
+        default=1,
+        ge=1,
+        le=20,
+        description="Result page number (1–20, default 1). Use to paginate beyond the first page.",
+    ),
+]
+
+TimeRangeParam = Annotated[
+    Literal["day", "week", "month", "year"] | None,
+    Field(
+        default=None,
+        description=(
+            "Restrict results to recent content. Valid values: 'day', 'week', 'month', 'year'. "
+            "Omit for no time filter."
+        ),
+    ),
+]
+
+SafesearchParam = Annotated[
+    Literal[0, 1, 2] | None,
+    Field(
+        default=None,
+        description=(
+            "Safe search level: 0=off, 1=moderate, 2=strict. Omit to use the server default."
+        ),
+    ),
+]
+
+MaxResultsParam = Annotated[
+    int | None,
+    Field(
+        default=None,
+        ge=1,
+        le=50,
+        description=(
+            "Maximum visible results to include in the compact summary (1–50). Default comes "
+            "from server settings (typically 5). The hidden `_meta.raw_payload.results` always "
+            "contains the full SearXNG response regardless of this cap."
+        ),
+    ),
+]
+
+TtlParam = Annotated[
+    int | None,
+    Field(
+        default=None,
+        ge=0,
+        le=86400,
+        description=(
+            "Cache TTL override in seconds (0–86400). 0 disables caching for this call. Omit "
+            "to use the server's default TTL."
+        ),
+    ),
+]
+
+ConcurrencyParam = Annotated[
+    int | None,
+    Field(
+        default=None,
+        ge=1,
+        le=16,
+        description=(
+            "Maximum concurrent backend requests for this fan-out (1–16). Higher is faster but "
+            "puts more load on the SearXNG instance and remote pages. Omit for the server default."
+        ),
+    ),
+]
+
+FetchLimitParam = Annotated[
+    int,
+    Field(
+        default=3,
+        ge=1,
+        le=20,
+        description=(
+            "Maximum number of search results to fetch and extract (1–20, default 3). Lower is "
+            "faster; higher gives more sources at the cost of latency."
+        ),
+    ),
+]
+
+FetchExcerptCharsParam = Annotated[
+    int | None,
+    Field(
+        default=None,
+        ge=200,
+        le=20000,
+        description=(
+            "Per-source excerpt character cap (200–20000). Default comes from server settings. "
+            "Smaller values keep the visible output tight; the full text is always available "
+            "in hidden `_meta` for each source."
+        ),
+    ),
+]
+
+RenderedParam = Annotated[
+    bool,
+    Field(
+        default=False,
+        description=(
+            "Force browser-based rendering for fetches. Default false: the server auto-renders "
+            "only when a page is JS-heavy or returns near-empty text. Set true when a previous "
+            "fetch came back nearly empty or to read a known SPA. Forced rendering is several "
+            "times slower than HTTP fetch."
+        ),
+    ),
+]
+
+RenderWaitMsParam = Annotated[
+    int | None,
+    Field(
+        default=None,
+        ge=0,
+        le=15000,
+        description=(
+            "Extra milliseconds to wait after DOM content load before extracting (0–15000). "
+            "Use a higher value (e.g. 1500–4000) for SPAs that hydrate slowly."
+        ),
+    ),
+]
+
+MaxExcerptCharsParam = Annotated[
+    int | None,
+    Field(
+        default=None,
+        ge=200,
+        le=50000,
+        description=(
+            "Excerpt character cap for the visible output (200–50000). Default comes from server "
+            "settings. The full extracted text is always returned in hidden `_meta.full_text`."
+        ),
+    ),
+]
+
+MaxLinksParam = Annotated[
+    int,
+    Field(
+        default=8,
+        ge=0,
+        le=64,
+        description=(
+            "Maximum outbound links to surface in the visible output (0–64, default 8). The "
+            "complete link list is always included in hidden `_meta`."
+        ),
+    ),
+]
+
+QueryParam = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=400,
+        description=(
+            "Search query (1–400 chars). Plain text or SearXNG syntax. SearXNG bangs like "
+            "'!wikipedia foo' or '!images cats' are supported and route to specific engines."
+        ),
+    ),
+]
+
+QueriesParam = Annotated[
+    list[str],
+    Field(
+        min_length=1,
+        max_length=10,
+        description=(
+            "List of 1–10 search queries to run in parallel. Use distinct phrasings or angles "
+            "(synonyms, related entities, opposing framings) for the best merged coverage."
+        ),
+    ),
+]
+
+UrlParam = Annotated[
+    str,
+    Field(
+        min_length=4,
+        max_length=4000,
+        description=(
+            "Absolute http:// or https:// URL to fetch. Bare domains like 'example.com' are "
+            "auto-prefixed with https://. Other schemes are rejected."
+        ),
+    ),
+]
+
+UrlsParam = Annotated[
+    list[str],
+    Field(
+        min_length=1,
+        max_length=20,
+        description=(
+            "List of 1–20 absolute http(s) URLs to fetch in parallel. Duplicates are dedupe-d "
+            "after canonicalisation."
+        ),
+    ),
+]
+
+
+READ_ONLY_SEARCH = ToolAnnotations(
+    title="SearXNG search",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=False,
+    openWorldHint=True,
+)
+
+READ_ONLY_FETCH = ToolAnnotations(
+    title="Web page fetch",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=True,
+)
+
+READ_ONLY_HEALTH = ToolAnnotations(
+    title="searxng-mcp health",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+)
+
+
 def create_server(settings: Settings) -> MCPBundle:
     service = SearxngMCPService(settings)
     server = FastMCP(
         name="searxng-mcp",
-        instructions=(
-            "Fast, token-efficient MCP access to SearXNG. "
-            "The AI client should choose tools autonomously. "
-            "Use search for one query, search_many for parallel fan-out, "
-            "search_and_fetch for one-query research, research for multi-query workflows, "
-            "fetch_url and fetch_many for source reading, "
-            "rendered fetch is automatic for JS-heavy pages and rendered=True forces browser mode, "
-            "read searxng://guide for the built-in workflow guide, "
-            "prompts are optional compatibility surfaces rather than the primary interface, "
-            "and health for backend status."
-        ),
+        instructions=SERVER_INSTRUCTIONS,
         host=settings.host,
         port=settings.port,
         json_response=True,
@@ -132,13 +416,16 @@ def create_server(settings: Settings) -> MCPBundle:
         title="Quick lookup",
         description="Seed the fastest single-question workflow.",
     )
-    def quick_lookup(topic: str, intent: str = "facts") -> str:
-        intent_key = (intent or "").strip().lower()
-        if intent_key not in {"facts", "links", "citations", "summary"}:
-            intent_key = "facts"
+    def quick_lookup(
+        topic: Annotated[str, Field(min_length=1, description="The topic or question to look up.")],
+        intent: Annotated[
+            Literal["facts", "links", "citations", "summary"],
+            Field(default="facts", description="Output emphasis: 'facts', 'links', 'citations', or 'summary'."),
+        ] = "facts",
+    ) -> str:
         return (
             f"Quick lookup topic: {topic}\n"
-            f"Intent: {intent_key}\n"
+            f"Intent: {intent}\n"
             "Use search_and_fetch first unless a specific URL is already known.\n"
             "Keep the result set small, prefer compact excerpts, and answer directly.\n"
             "Rendered fetch is automatic for JS-heavy pages; only force rendered=True if the page is incomplete."
@@ -149,14 +436,17 @@ def create_server(settings: Settings) -> MCPBundle:
         title="Deep research",
         description="Seed the broader multi-query research workflow.",
     )
-    def deep_research(topic: str, scope: str = "broad") -> str:
-        scope_key = (scope or "").strip().lower()
-        if scope_key not in {"focused", "broad", "wide"}:
-            scope_key = "broad"
-        if scope_key == "focused":
+    def deep_research(
+        topic: Annotated[str, Field(min_length=1, description="The topic or question to research.")],
+        scope: Annotated[
+            Literal["focused", "broad", "wide"],
+            Field(default="broad", description="Breadth: 'focused' (few queries), 'broad' (default), or 'wide' (many queries)."),
+        ] = "broad",
+    ) -> str:
+        if scope == "focused":
             workflow = "search_many -> research"
             extra = "Use a few query variants to widen coverage before fetching the strongest sources."
-        elif scope_key == "wide":
+        elif scope == "wide":
             workflow = "search_many -> research -> fetch_many"
             extra = "Use more query variants and compare multiple sources before deciding."
         else:
@@ -164,7 +454,7 @@ def create_server(settings: Settings) -> MCPBundle:
             extra = "Use merged multi-query search, then fetch the top sources with citations."
         return (
             f"Deep research topic: {topic}\n"
-            f"Scope: {scope_key}\n"
+            f"Scope: {scope}\n"
             f"Preferred workflow: {workflow}\n"
             "Start broad, merge and dedupe, then read the best sources.\n"
             "Use rendered fetch automatically for JS-heavy pages and rendered=True only when the first pass is incomplete.\n"
@@ -176,16 +466,19 @@ def create_server(settings: Settings) -> MCPBundle:
         title="Research workflow",
         description="Compatibility router that chooses quick_lookup or deep_research.",
     )
-    def research_workflow(topic: str, depth: str = "deep") -> str:
-        depth_key = (depth or "").strip().lower()
-        if depth_key not in {"quick", "broad", "deep"}:
-            depth_key = "deep"
-        if depth_key == "quick":
+    def research_workflow(
+        topic: Annotated[str, Field(min_length=1, description="The topic or question to investigate.")],
+        depth: Annotated[
+            Literal["quick", "broad", "deep"],
+            Field(default="deep", description="Depth router: 'quick' for a fact lookup, 'broad' or 'deep' for multi-source research."),
+        ] = "deep",
+    ) -> str:
+        if depth == "quick":
             return (
                 f"Use quick_lookup for topic: {topic}.\n"
                 "This is the best fit for direct questions, short fact finding, and small result sets."
             )
-        elif depth_key == "broad":
+        if depth == "broad":
             return (
                 f"Use deep_research for topic: {topic}.\n"
                 "This is the best fit for broader investigations that need multiple sources."
@@ -195,19 +488,33 @@ def create_server(settings: Settings) -> MCPBundle:
             "This is the best fit for broader investigations that need source verification and citations."
         )
 
-    @server.tool(name="search", description="Search SearXNG for a single query and return a compact summary plus hidden raw payload.")
+    @server.tool(
+        name="search",
+        description=(
+            "Search the open web via SearXNG for a single query and return a compact, "
+            "token-efficient summary of the top results.\n"
+            "Best for: quick fact-finding, current events, locating likely sources, single-question lookups.\n"
+            "Returns: ranked list of {title, url, domain, snippet, engine, score} plus answers, infoboxes, "
+            "suggestions and corrections when SearXNG provides them. The full SearXNG payload is also "
+            "available in hidden `_meta.raw_payload`.\n"
+            "Use `search_many` instead when running multiple parallel queries; `search_and_fetch` when "
+            "you also need extracted page content; `research` for multi-query investigations with merged "
+            "sources and fetched excerpts."
+        ),
+        annotations=READ_ONLY_SEARCH,
+    )
     async def search_tool(
-        query: str,
-        categories: str | None = None,
-        engines: str | None = None,
-        enabled_engines: str | None = None,
-        disabled_engines: str | None = None,
-        language: str | None = None,
-        pageno: int = 1,
-        time_range: str | None = None,
-        safesearch: int | None = None,
-        max_results: int | None = None,
-        ttl: int | None = None,
+        query: QueryParam,
+        categories: CategoriesParam = None,
+        engines: EnginesParam = None,
+        enabled_engines: EnabledEnginesParam = None,
+        disabled_engines: DisabledEnginesParam = None,
+        language: LanguageParam = None,
+        pageno: PageNoParam = 1,
+        time_range: TimeRangeParam = None,
+        safesearch: SafesearchParam = None,
+        max_results: MaxResultsParam = None,
+        ttl: TtlParam = None,
         ctx: Context = None,  # type: ignore[assignment]
     ):
         return await service.search(
@@ -225,20 +532,33 @@ def create_server(settings: Settings) -> MCPBundle:
             ctx=ctx,
         )
 
-    @server.tool(name="search_many", description="Search multiple queries in parallel, dedupe the results, and return a merged ranking.")
+    @server.tool(
+        name="search_many",
+        description=(
+            "Run several SearXNG searches in parallel, then dedupe and merge their result sets into "
+            "a single ranked list.\n"
+            "Best for: broadening coverage on one topic with synonym/angle variants, comparing how "
+            "different phrasings rank, building a high-recall source pool before fetching.\n"
+            "Returns: merged hits with per-hit `queries` (which inputs surfaced it), `engines`, "
+            "`hit_count`, and a `merged_score`. Per-query raw payloads are in hidden `_meta`.\n"
+            "Use `search` for a single query; `research` when you also need the top sources fetched "
+            "and excerpted in the same call."
+        ),
+        annotations=READ_ONLY_SEARCH,
+    )
     async def search_many_tool(
-        queries: list[str],
-        categories: str | None = None,
-        engines: str | None = None,
-        enabled_engines: str | None = None,
-        disabled_engines: str | None = None,
-        language: str | None = None,
-        pageno: int = 1,
-        time_range: str | None = None,
-        safesearch: int | None = None,
-        max_results: int | None = None,
-        concurrency: int | None = None,
-        ttl: int | None = None,
+        queries: QueriesParam,
+        categories: CategoriesParam = None,
+        engines: EnginesParam = None,
+        enabled_engines: EnabledEnginesParam = None,
+        disabled_engines: DisabledEnginesParam = None,
+        language: LanguageParam = None,
+        pageno: PageNoParam = 1,
+        time_range: TimeRangeParam = None,
+        safesearch: SafesearchParam = None,
+        max_results: MaxResultsParam = None,
+        concurrency: ConcurrencyParam = None,
+        ttl: TtlParam = None,
         ctx: Context = None,  # type: ignore[assignment]
     ):
         return await service.search_many(
@@ -257,23 +577,38 @@ def create_server(settings: Settings) -> MCPBundle:
             ctx=ctx,
         )
 
-    @server.tool(name="search_and_fetch", description="Search SearXNG and fetch the top results with content extraction and citation metadata. Rendered fetch is automatic for JS-heavy pages; set rendered=True to force browser mode.")
+    @server.tool(
+        name="search_and_fetch",
+        description=(
+            "Search SearXNG for one query and fetch+extract the top results in a single call. "
+            "Combines `search` and `fetch_many` for one-query research workflows.\n"
+            "Best for: answering one question that needs evidence from full pages, building a "
+            "citation-backed answer to a single prompt, getting both ranked results and readable "
+            "excerpts in one round-trip.\n"
+            "Returns: search summary plus per-source `{title, url, excerpt, citations, render_mode}`. "
+            "The full SearXNG payload and per-page full text are in hidden `_meta`.\n"
+            "Rendered fetch is automatic for JS-heavy pages; pass `rendered=true` to force browser "
+            "mode (slower).\n"
+            "Use `search` if extraction is not needed; `research` for multi-query investigations."
+        ),
+        annotations=READ_ONLY_SEARCH,
+    )
     async def search_and_fetch_tool(
-        query: str,
-        categories: str | None = None,
-        engines: str | None = None,
-        enabled_engines: str | None = None,
-        disabled_engines: str | None = None,
-        language: str | None = None,
-        pageno: int = 1,
-        time_range: str | None = None,
-        safesearch: int | None = None,
-        max_results: int | None = None,
-        fetch_limit: int = 3,
-        fetch_excerpt_chars: int | None = None,
-        rendered: bool = False,
-        render_wait_ms: int | None = None,
-        ttl: int | None = None,
+        query: QueryParam,
+        categories: CategoriesParam = None,
+        engines: EnginesParam = None,
+        enabled_engines: EnabledEnginesParam = None,
+        disabled_engines: DisabledEnginesParam = None,
+        language: LanguageParam = None,
+        pageno: PageNoParam = 1,
+        time_range: TimeRangeParam = None,
+        safesearch: SafesearchParam = None,
+        max_results: MaxResultsParam = None,
+        fetch_limit: FetchLimitParam = 3,
+        fetch_excerpt_chars: FetchExcerptCharsParam = None,
+        rendered: RenderedParam = False,
+        render_wait_ms: RenderWaitMsParam = None,
+        ttl: TtlParam = None,
         ctx: Context = None,  # type: ignore[assignment]
     ):
         return await service.search_and_fetch(
@@ -295,24 +630,37 @@ def create_server(settings: Settings) -> MCPBundle:
             ctx=ctx,
         )
 
-    @server.tool(name="research", description="Search multiple queries, merge and dedupe results, then fetch the top sources with citations. Rendered fetch is automatic for JS-heavy pages; set rendered=True to force browser mode.")
+    @server.tool(
+        name="research",
+        description=(
+            "Run multi-query research: search several queries in parallel, merge and dedupe results, "
+            "then fetch and extract the strongest sources with citations.\n"
+            "Best for: open-ended investigations, building a multi-source briefing, answering a "
+            "complex question that needs cross-checking across providers.\n"
+            "Returns: merged ranking, per-source extracted excerpts and citations, plus a query map "
+            "showing which queries surfaced each source. Full payloads in hidden `_meta`.\n"
+            "Rendered fetch is automatic for JS-heavy pages; pass `rendered=true` to force browser mode.\n"
+            "Use `search_many` when extraction is not needed; `search_and_fetch` for a single query."
+        ),
+        annotations=READ_ONLY_SEARCH,
+    )
     async def research_tool(
-        queries: list[str],
-        categories: str | None = None,
-        engines: str | None = None,
-        enabled_engines: str | None = None,
-        disabled_engines: str | None = None,
-        language: str | None = None,
-        pageno: int = 1,
-        time_range: str | None = None,
-        safesearch: int | None = None,
-        max_results: int | None = None,
-        fetch_limit: int = 3,
-        fetch_excerpt_chars: int | None = None,
-        rendered: bool = False,
-        render_wait_ms: int | None = None,
-        concurrency: int | None = None,
-        ttl: int | None = None,
+        queries: QueriesParam,
+        categories: CategoriesParam = None,
+        engines: EnginesParam = None,
+        enabled_engines: EnabledEnginesParam = None,
+        disabled_engines: DisabledEnginesParam = None,
+        language: LanguageParam = None,
+        pageno: PageNoParam = 1,
+        time_range: TimeRangeParam = None,
+        safesearch: SafesearchParam = None,
+        max_results: MaxResultsParam = None,
+        fetch_limit: FetchLimitParam = 3,
+        fetch_excerpt_chars: FetchExcerptCharsParam = None,
+        rendered: RenderedParam = False,
+        render_wait_ms: RenderWaitMsParam = None,
+        concurrency: ConcurrencyParam = None,
+        ttl: TtlParam = None,
         ctx: Context = None,  # type: ignore[assignment]
     ):
         return await service.research(
@@ -335,14 +683,29 @@ def create_server(settings: Settings) -> MCPBundle:
             ctx=ctx,
         )
 
-    @server.tool(name="fetch_url", description="Fetch a URL, extract readable content, and return a compact excerpt with hidden full text metadata. Rendered fetch is automatic for JS-heavy pages; set rendered=True to force browser mode.")
+    @server.tool(
+        name="fetch_url",
+        description=(
+            "Fetch one URL, extract readable content (Readability-style), and return a compact "
+            "excerpt plus link list. The full extracted text is preserved in hidden `_meta.full_text`.\n"
+            "Best for: reading a known page after `search`/`search_many`, extracting clean prose "
+            "from an article, getting an outbound-link list from a hub page.\n"
+            "Returns: `{title, url, excerpt, citations, links, content_type, render_mode}` plus "
+            "domain and word/char counts.\n"
+            "Rendered fetch is automatic for JS-heavy pages; pass `rendered=true` to force browser "
+            "mode when a previous fetch came back nearly empty.\n"
+            "Use `fetch_many` for multiple URLs in one call; `search_and_fetch` if you do not yet "
+            "have URLs."
+        ),
+        annotations=READ_ONLY_FETCH,
+    )
     async def fetch_url_tool(
-        url: str,
-        max_excerpt_chars: int | None = None,
-        max_links: int = 8,
-        rendered: bool = False,
-        render_wait_ms: int | None = None,
-        ttl: int | None = None,
+        url: UrlParam,
+        max_excerpt_chars: MaxExcerptCharsParam = None,
+        max_links: MaxLinksParam = 8,
+        rendered: RenderedParam = False,
+        render_wait_ms: RenderWaitMsParam = None,
+        ttl: TtlParam = None,
         ctx: Context = None,  # type: ignore[assignment]
     ):
         return await service.fetch_url(
@@ -355,15 +718,29 @@ def create_server(settings: Settings) -> MCPBundle:
             ctx=ctx,
         )
 
-    @server.tool(name="fetch_many", description="Fetch multiple URLs in parallel, extract content, and return compact citations. Rendered fetch is automatic for JS-heavy pages; set rendered=True to force browser mode.")
+    @server.tool(
+        name="fetch_many",
+        description=(
+            "Fetch and extract several URLs in parallel. URLs are deduplicated after canonicalisation. "
+            "Each per-source full text is preserved in hidden `_meta.pages[].full_text`.\n"
+            "Best for: reading a batch of search results, comparing several known sources, building "
+            "a multi-source citation set.\n"
+            "Returns: per-source `{title, url, excerpt, citations, render_mode}` and aggregate "
+            "stats (success_count, error_count, elapsed_ms).\n"
+            "Rendered fetch is automatic for JS-heavy pages; pass `rendered=true` to force browser "
+            "mode for every URL (slower).\n"
+            "Use `fetch_url` for a single URL; `research` for an end-to-end multi-query workflow."
+        ),
+        annotations=READ_ONLY_FETCH,
+    )
     async def fetch_many_tool(
-        urls: list[str],
-        max_excerpt_chars: int | None = None,
-        max_links: int = 8,
-        rendered: bool = False,
-        render_wait_ms: int | None = None,
-        concurrency: int | None = None,
-        ttl: int | None = None,
+        urls: UrlsParam,
+        max_excerpt_chars: MaxExcerptCharsParam = None,
+        max_links: MaxLinksParam = 8,
+        rendered: RenderedParam = False,
+        render_wait_ms: RenderWaitMsParam = None,
+        concurrency: ConcurrencyParam = None,
+        ttl: TtlParam = None,
         ctx: Context = None,  # type: ignore[assignment]
     ):
         return await service.fetch_many(
@@ -377,7 +754,16 @@ def create_server(settings: Settings) -> MCPBundle:
             ctx=ctx,
         )
 
-    @server.tool(name="health", description="Check that SearXNG and the local cache are healthy.")
+    @server.tool(
+        name="health",
+        description=(
+            "Report backend, cache, and render-engine readiness. Takes no arguments.\n"
+            "Best for: a one-shot check before a session, debugging a 'search failed' result, "
+            "verifying that the SearXNG backend is reachable and that rendered fetch is available.\n"
+            "Returns: `{backend, cache, render}` with status, latency, and any active fallback URLs."
+        ),
+        annotations=READ_ONLY_HEALTH,
+    )
     async def health_tool(ctx: Context = None):  # type: ignore[assignment]
         return await service.health(ctx=ctx)
 
