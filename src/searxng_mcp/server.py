@@ -312,7 +312,7 @@ READ_ONLY_HEALTH = ToolAnnotations(
 def create_server(settings: Settings) -> MCPBundle:
     service = SearxngMCPService(settings)
     server = FastMCP(
-        name="searxng-mcp",
+        name="searxng",
         instructions=SERVER_INSTRUCTIONS,
         host=settings.host,
         port=settings.port,
