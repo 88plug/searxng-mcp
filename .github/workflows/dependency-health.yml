@@ -1,0 +1,53 @@
+name: Dependency Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit-and-refresh-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Audit installed dependencies
+        run: uvx --from pip-audit pip-audit
+
+      - name: Check for available dependency upgrades
+        run: |
+          set -euo pipefail
+          uv lock --upgrade --dry-run | tee /tmp/uv-lock-upgrade.txt
+
+      - name: Publish dependency summary
+        if: always()
+        run: |
+          {
+            echo "## Dependency health"
+            echo
+            echo "### Vulnerability audit"
+            echo "- \`uvx --from pip-audit pip-audit\` completed"
+            echo
+            echo "### Upgrade dry run"
+            echo '```text'
+            cat /tmp/uv-lock-upgrade.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

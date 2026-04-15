@@ -174,3 +174,17 @@ uv run pytest -q
 uv run python -m compileall src
 uv run mkdocs build --strict
 ```
+
+## Dependency Maintenance
+
+Manual checks:
+
+```bash
+uv lock --upgrade --dry-run
+uvx --from pip-audit pip-audit
+```
+
+Automated checks:
+
+- weekly Dependabot PRs for `uv` dependencies and GitHub Actions
+- weekly `Dependency Health` workflow for vulnerability scanning and upgrade dry runs

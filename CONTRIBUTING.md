@@ -30,9 +30,12 @@ This project is intentionally small in surface area and opinionated in behavior.
 Suggested checks:
 
 ```bash
-pytest -q
-python -m compileall src
-python -m build
+uv sync --all-groups
+uv run pytest -q
+uv run python -m compileall src
+uv build
+uv lock --upgrade --dry-run
+uvx --from pip-audit pip-audit
 ```
 
 If your change touches container behavior:
