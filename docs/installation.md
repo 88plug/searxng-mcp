@@ -10,11 +10,7 @@
 uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp --help
 ```
 
-If you need rendered fetch support, request the `render` extra via PEP 508 direct-reference syntax:
-
-```bash
-uvx --from "searxng-mcp[render] @ git+https://github.com/88plug/searxng-mcp" searxng-mcp --help
-```
+Rendered fetch ships in the default install. If the machine does not already have Chromium or Chrome, the first rendered fetch downloads Playwright Chromium into the user cache automatically.
 
 ## From Source
 
@@ -30,7 +26,7 @@ uv run searxng-mcp --help
 For a plain editable install:
 
 ```bash
-python -m pip install -e '.[render]'
+python -m pip install -e .
 ```
 
 ## Docker
@@ -57,7 +53,7 @@ docker compose up --build -d
 
 ## Installation Notes
 
-- `render` is optional and only needed for browser-backed fetches
+- rendered fetch is included in the default install
 - `dev` is for contributors, not end users
 - `stdio` is the default transport
 - `streamable-http` is for deployment

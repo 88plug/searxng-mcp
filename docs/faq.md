@@ -14,7 +14,7 @@ Yes. Rendered fetch is automatic for weak HTML pages and can be forced with `ren
 
 ## Is rendered fetch always enabled?
 
-No. Browser rendering is optional and depends on the render extras and local browser availability.
+Yes for installs, conditional at runtime. `searxng-mcp` includes Playwright by default and uses local Chromium or Chrome when present. If not, the first rendered fetch downloads Playwright Chromium into the user cache.
 
 ## Can this be exposed publicly?
 

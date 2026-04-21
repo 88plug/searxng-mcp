@@ -35,11 +35,7 @@ uv run searxng-mcp
 uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp
 ```
 
-For rendered fetch support, request the `render` extra:
-
-```bash
-uvx --from "searxng-mcp[render] @ git+https://github.com/88plug/searxng-mcp" searxng-mcp
-```
+Rendered fetch is included in the default install. If the host already has Chromium or Chrome, `searxng-mcp` uses it. Otherwise the first rendered fetch bootstraps Playwright Chromium into the user cache automatically.
 
 ### Run with Docker
 
@@ -110,7 +106,7 @@ If you expose the HTTP transport, treat it like an internal service and add the 
 
 - compact model-visible output, with full details preserved in hidden metadata
 - faster research workflows through parallel search and fetch fan-out
-- optional rendered extraction for JS-heavy pages
+- rendered extraction for JS-heavy pages without extra install flags
 - self-hostable deployment for people who want their own SearXNG-backed MCP server
 
 ## MCP Surface

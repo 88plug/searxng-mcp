@@ -6,7 +6,7 @@ This page gives the shortest path from a local SearXNG instance to a usable `sea
 
 - Python 3.11 or newer
 - A running SearXNG instance
-- Optional: Chromium plus Playwright if you want rendered fetch
+- Optional: local Chromium or Chrome for faster first rendered fetch
 
 ## Local Development
 
@@ -22,9 +22,11 @@ If you prefer `pip`:
 
 ```bash
 cd searxng-mcp
-python -m pip install -e '.[render]'
+python -m pip install -e .
 searxng-mcp --help
 ```
+
+If the machine does not already have Chromium or Chrome, the first rendered fetch downloads Playwright Chromium into the user cache automatically.
 
 ## First Run
 

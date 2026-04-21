@@ -4,10 +4,12 @@ from dataclasses import dataclass
 import asyncio
 from http import HTTPStatus
 from shutil import which
+import subprocess
+import sys
 import time
 from typing import Any
 
-try:  # pragma: no cover - optional dependency
+try:  # pragma: no cover - imported defensively for incomplete installs
     from playwright.async_api import TimeoutError as PlaywrightTimeoutError
     from playwright.async_api import async_playwright
 except Exception:  # pragma: no cover
@@ -41,6 +43,7 @@ class RenderedFetchClient:
         self._playwright = None
         self._browser = None
         self._context = None
+        self._browser_install_attempted = False
 
     def _browser_executable(self) -> str | None:
         if self.settings.render_browser_path:
@@ -64,6 +67,38 @@ class RenderedFetchClient:
             "wait_ms": self.settings.render_wait_ms,
         }
 
+    def _should_auto_install_browser(self, exc: Exception, *, executable_path: str | None) -> bool:
+        if executable_path is not None or self._browser_install_attempted:
+            return False
+        message = str(exc).lower()
+        return any(
+            hint in message
+            for hint in (
+                "executable doesn't exist",
+                "download new browsers",
+                "playwright install",
+            )
+        )
+
+    async def _install_playwright_browser(self) -> None:
+        self._browser_install_attempted = True
+        command = [sys.executable, "-m", "playwright", "install", "chromium"]
+        try:
+            # Keep browser payload in Playwright's user cache so one uvx install stays usable.
+            await asyncio.to_thread(
+                subprocess.run,
+                command,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            output = (exc.stderr or exc.stdout or "").strip().splitlines()
+            detail = f": {output[-1]}" if output else ""
+            raise RenderedFetchError(f"Failed to install Chromium for rendered fetch{detail}") from exc
+        except Exception as exc:  # noqa: BLE001
+            raise RenderedFetchError(f"Failed to install Chromium for rendered fetch: {exc}") from exc
+
     async def _route_handler(self, route) -> Any:  # pragma: no cover - Playwright callback
         resource_type = route.request.resource_type
         if self.settings.render_block_resources and resource_type in {"image", "media", "font", "stylesheet"}:
@@ -80,7 +115,7 @@ class RenderedFetchClient:
                 return self._context
             if async_playwright is None:
                 raise RenderedFetchError(
-                    "Playwright is not installed. Install searxng-mcp[render] or playwright to use rendered fetches."
+                    "Playwright is unavailable in this install. Reinstall searxng-mcp to restore rendered fetch support."
                 )
             try:
                 self._playwright = await async_playwright().start()
@@ -100,6 +135,19 @@ class RenderedFetchClient:
 
             try:
                 self._browser = await self._playwright.chromium.launch(**launch_kwargs)
+            except Exception as exc:  # noqa: BLE001
+                if self._should_auto_install_browser(exc, executable_path=executable_path):
+                    await self._install_playwright_browser()
+                    try:
+                        self._browser = await self._playwright.chromium.launch(**launch_kwargs)
+                    except Exception as retry_exc:  # noqa: BLE001
+                        await self.close()
+                        raise RenderedFetchError(f"Failed to start Chromium: {retry_exc}") from retry_exc
+                else:
+                    await self.close()
+                    raise RenderedFetchError(f"Failed to start Chromium: {exc}") from exc
+
+            try:
                 self._context = await self._browser.new_context(
                     user_agent=self.settings.mcp_user_agent,
                     viewport={"width": 1280, "height": 800},

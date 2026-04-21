@@ -20,7 +20,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 
 RUN python -m pip install --no-cache-dir --upgrade pip && \
-    python -m pip install --no-cache-dir '.[render]' && \
+    python -m pip install --no-cache-dir . && \
     useradd --create-home --home-dir /home/searxng --shell /usr/sbin/nologin searxng && \
     mkdir -p /data/cache /home/searxng/.cache /home/searxng/.config && \
     chown -R searxng:searxng /app /data /home/searxng
