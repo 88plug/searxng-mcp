@@ -3,6 +3,7 @@
 [![CI](https://github.com/88plug/searxng-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/88plug/searxng-mcp/actions/workflows/ci.yml)
 [![Release](https://github.com/88plug/searxng-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/88plug/searxng-mcp/actions/workflows/release.yml)
 [![Pages](https://github.com/88plug/searxng-mcp/actions/workflows/pages.yml/badge.svg)](https://github.com/88plug/searxng-mcp/actions/workflows/pages.yml)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/88plug/searxng-mcp)
 
 An MCP server for SearXNG that keeps the model-visible output short, preserves full result payloads in hidden metadata, and supports both local `stdio` clients and deployed `streamable-http` use.
 
