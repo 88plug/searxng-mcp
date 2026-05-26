@@ -190,3 +190,16 @@ Automated checks:
 
 - weekly Dependabot PRs for `uv` dependencies and GitHub Actions
 - weekly `Dependency Health` workflow for vulnerability scanning and upgrade dry runs
+
+## License
+
+[Functional Source License, Version 1.1, ALv2 Future License](LICENSE.md)
+(`FSL-1.1-ALv2`).
+
+Free to use, copy, modify, and redistribute for any purpose *except* a Competing
+Use — i.e. offering this software (or a substantially similar substitute) as a
+commercial product or service. Each released version automatically converts to
+the Apache License 2.0 on the second anniversary of its release date.
+
+For commercial-use inquiries that fall outside the Permitted Purpose:
+claude@cryptoandcoffee.com.

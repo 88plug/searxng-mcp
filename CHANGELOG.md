@@ -9,6 +9,38 @@ The project follows a simple release log:
 
 ## Unreleased
 
+## [0.2.0] — 2026-05-26
+
+### Changed — license
+
+- **Relicensed from MIT to `FSL-1.1-ALv2`** (Functional Source License,
+  Version 1.1, Apache-2.0 Future License). Source remains visible;
+  redistribution and modification remain permitted for any Permitted Purpose.
+  A Competing Use — offering searxng-mcp (or a substantially similar
+  substitute) as a commercial product or service — is no longer a Permitted
+  Purpose. Each released version automatically converts to the Apache License
+  2.0 on the second anniversary of its release date. See [`LICENSE.md`](./LICENSE.md).
+- `LICENSE` (MIT) removed in favor of `LICENSE.md` (FSL-1.1-ALv2).
+- `pyproject.toml` license expression updated to `LicenseRef-FSL-1.1-ALv2`
+  (PEP 639); `license-files = ["LICENSE.md"]`; `setuptools>=77`.
+
+### Added — Claude Code plugin wrapper
+
+- `.claude-plugin/plugin.json` declares this repo as a Claude Code plugin
+  named `searxng`. Users can install via:
+  ```
+  /plugin marketplace add 88plug/claude-code-plugins
+  /plugin install searxng@88plug
+  ```
+- The plugin invokes the pure MCP server via `uvx --from git+...` so no
+  separate install step is needed for users with `uv` installed.
+- The underlying pure MCP remains independently usable for non-Claude-Code
+  clients (Cline, Cursor, Continue, Codex, etc.) via the existing
+  `uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp`
+  invocation.
+
+## Unreleased — pre-0.2.0
+
 ### Added
 
 - MCP server for SearXNG with `stdio` and `streamable-http` transports.
