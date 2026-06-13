@@ -320,6 +320,10 @@ def create_server(settings: Settings) -> MCPBundle:
         stateless_http=True,
         log_level="INFO",
     )
+    # Surface the package version in the MCP initialize handshake's serverInfo
+    # (FastMCP has no version= param; the low-level server defaults to the mcp
+    # SDK version when this is unset).
+    server._mcp_server.version = __version__
 
     @server.resource(
         "searxng://config",
