@@ -1,0 +1,20 @@
+name: plugin-validate
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh (for shell-portability checks)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml
+      - name: Validate plugin manifest & surfaces
+        run: python .ci/validate_plugin.py .
