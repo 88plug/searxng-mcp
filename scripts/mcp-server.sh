@@ -17,6 +17,32 @@ fi
 DATA_ROOT="${CLAUDE_PLUGIN_DATA:-${HOME}/.claude/plugins/data}/searxng"
 
 _can_run_uv() { [ -x "$1" ] && "$1" --version >/dev/null 2>&1; }
+
+# Extract the uv binary BUNDLED with the plugin (vendor/uv/uv-<target>.tar.gz) for
+# this host into the data dir; echoes its path. Offline-capable on any supported platform.
+_uv_from_bundle() {
+  local vend="${PLUGIN_ROOT}/vendor/uv" os arch libc target tb dest
+  [ -d "$vend" ] || return 1
+  os="$(uname -s 2>/dev/null)"; arch="$(uname -m 2>/dev/null)"
+  case "$os" in
+    Linux)
+      case "$arch" in x86_64|amd64) arch=x86_64 ;; aarch64|arm64) arch=aarch64 ;; *) return 1 ;; esac
+      libc=gnu
+      if (ldd --version 2>&1 | grep -qi musl) || ls /lib/ld-musl-* >/dev/null 2>&1; then libc=musl; fi
+      target="${arch}-unknown-linux-${libc}" ;;
+    Darwin)
+      case "$arch" in x86_64) arch=x86_64 ;; arm64|aarch64) arch=aarch64 ;; *) return 1 ;; esac
+      target="${arch}-apple-darwin" ;;
+    *) return 1 ;;
+  esac
+  tb="${vend}/uv-${target}.tar.gz"; [ -f "$tb" ] || return 1
+  dest="${DATA_ROOT}/bin"; mkdir -p "$dest" || return 1
+  tar xzf "$tb" --strip-components=1 -C "$dest" >/dev/null 2>&1 || return 1
+  chmod +x "$dest/uv" "$dest/uvx" 2>/dev/null || true
+  _can_run_uv "$dest/uv" && { printf '%s' "$dest/uv"; return 0; }
+  return 1
+}
+
 UV=""
 if [ -n "${SEARXNG_UV:-}" ] && _can_run_uv "$SEARXNG_UV"; then
   UV="$SEARXNG_UV"
@@ -26,6 +52,8 @@ elif _can_run_uv "${HOME}/.local/bin/uv"; then
   UV="${HOME}/.local/bin/uv"
 elif _can_run_uv "${DATA_ROOT}/bin/uv"; then
   UV="${DATA_ROOT}/bin/uv"
+elif UV="$(_uv_from_bundle)" && [ -n "$UV" ]; then
+  : # extracted from the plugin's bundled vendor/uv (offline)
 elif command -v curl >/dev/null 2>&1; then
   dest_bin="${DATA_ROOT}/bin"; mkdir -p "$dest_bin"
   UV_INSTALL_DIR="$dest_bin" UV_UNMANAGED_INSTALL=1 \
