@@ -18,12 +18,7 @@
   ],
   "mcpServers": {
     "searxng": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/88plug/searxng-mcp",
-        "searxng-mcp"
-      ],
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-server.sh",
       "env": {
         "SEARXNG_MCP_BASE_URL": "http://127.0.0.1:8890"
       }
