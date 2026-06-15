@@ -16,6 +16,25 @@ CLI flags override environment-derived defaults.
 | `SEARXNG_MCP_TRUST_ENV` | `false` | Whether `httpx` trusts proxy env vars |
 | `SEARXNG_MCP_USER_AGENT` | `searxng-mcp/<version>` | User agent for outgoing requests |
 
+### Per-host override (Claude Code plugin)
+
+The Claude Code plugin ships a `SEARXNG_MCP_BASE_URL` default of `http://127.0.0.1:8890`
+in its manifest. A plugin manifest's `env` takes precedence over your
+`settings.json` `env`, and the cached manifest is overwritten on every plugin
+update — so neither is a durable place to point the server at your own backend.
+
+Instead, the launcher (`scripts/mcp-server.sh`) sources an optional file just
+before starting the server, so its exports win over the manifest default and
+survive updates. Create `~/.config/searxng-mcp/env` (or point
+`SEARXNG_MCP_ENV_FILE` elsewhere):
+
+```sh
+export SEARXNG_MCP_BASE_URL=http://your-searxng-host:8890
+export SEARXNG_MCP_FALLBACK_BASE_URLS=http://backup-host:8890
+```
+
+With no such file, the manifest default applies unchanged.
+
 ## Timeouts and Caching
 
 | Variable | Default | Purpose |
