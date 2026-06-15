@@ -5,7 +5,24 @@ use_directory_urls: true
 strict: true
 
 theme:
-  name: readthedocs
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - content.code.copy
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 markdown_extensions:
   - admonition
@@ -13,6 +30,9 @@ markdown_extensions:
   - def_list
   - footnotes
   - tables
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
   - toc:
       permalink: true
 
