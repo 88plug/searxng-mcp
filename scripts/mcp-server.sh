@@ -65,5 +65,15 @@ if [ -z "$UV" ]; then
   exit 1
 fi
 
+# Optional per-host override, kept OUTSIDE the plugin so it survives auto-updates
+# (the manifest's env is re-fetched on every update and would clobber an in-cache
+# edit). Sourced LAST, so its exports win over the manifest default SEARXNG_MCP_*.
+# Absent on a normal install → the manifest default applies, unchanged.
+_OVERRIDE="${SEARXNG_MCP_ENV_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/searxng-mcp/env}"
+if [ -f "$_OVERRIDE" ]; then
+  # shellcheck disable=SC1090
+  . "$_OVERRIDE"
+fi
+
 cd "$PLUGIN_ROOT"
 exec "$UV" run --project "$PLUGIN_ROOT" --python ">=3.11" python -m searxng_mcp "$@"
