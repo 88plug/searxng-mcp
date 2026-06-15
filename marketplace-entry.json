@@ -1,0 +1,19 @@
+{
+  "name": "searxng",
+  "source": {
+    "source": "github",
+    "repo": "88plug/searxng-mcp"
+  },
+  "description": "Fast, token-efficient MCP for SearXNG metasearch. Privacy-respecting search across 70+ engines with stdio + streamable-http transports, Docker, and optional rendered (Playwright) fetch for JS-heavy pages. Self-hostable. The underlying server is also usable independently of Claude Code via `uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp`.",
+  "category": "search",
+  "tags": [
+    "type:mcp",
+    "search",
+    "searxng",
+    "metasearch",
+    "mcp",
+    "privacy",
+    "self-hosted"
+  ],
+  "homepage": "https://github.com/88plug/searxng-mcp"
+}
