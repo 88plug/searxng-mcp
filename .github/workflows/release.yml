@@ -96,24 +96,6 @@ jobs:
             --title "${{ steps.notes.outputs.tag_name }}" \
             --notes-file release-notes.md
 
-  publish-pypi:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts
-          path: dist
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist
-
   publish-ghcr:
     needs: build
     runs-on: ubuntu-latest
