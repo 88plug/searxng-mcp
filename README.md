@@ -2,6 +2,8 @@
 
 # searxng-mcp
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/88plug/searxng-mcp)
+
 Token-efficient MCP server for SearXNG metasearch, for Claude Code and any MCP client that wants private web search and page extraction.
 
 [![plugin-validate](https://github.com/88plug/searxng-mcp/actions/workflows/plugin-validate.yml/badge.svg)](https://github.com/88plug/searxng-mcp/actions/workflows/plugin-validate.yml)
