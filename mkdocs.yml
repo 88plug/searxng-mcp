@@ -1,6 +1,10 @@
 site_name: searxng-mcp
 site_description: Fast, token-efficient MCP server for SearXNG
 site_author: andrew
+site_url: https://88plug.github.io/searxng-mcp/
+repo_url: https://github.com/88plug/searxng-mcp
+repo_name: 88plug/searxng-mcp
+edit_uri: edit/main/docs/
 use_directory_urls: true
 strict: true
 
@@ -27,6 +31,7 @@ theme:
 markdown_extensions:
   - admonition
   - attr_list
+  - md_in_html
   - def_list
   - footnotes
   - tables

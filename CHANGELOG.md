@@ -2,14 +2,20 @@
 
 All notable changes to `searxng-mcp` are documented in this file.
 
-The project follows a simple release log:
+The project follows a calver release log (`YYYY.M.N`), most recent first.
 
-- `Unreleased` tracks work that has landed on `main` but has not been tagged.
-- Versioned sections will record shipped releases once we start publishing tags.
+## 2026.6.23
 
-## Unreleased
+### Changed
 
-## [0.2.0] — 2026-05-26
+- Plugin compliance pass for the 88plug marketplace scaffold: `version`
+  (calver) added to `.claude-plugin/plugin.json`, keyword set expanded to the
+  required 20 (base set + MCP triad + niche tags), CI/Pages workflows and the
+  manifest validator brought up to current action versions, MkDocs config
+  hardened (`md_in_html`, `site_url`/`repo_url`/`repo_name`/`edit_uri`), and a
+  `tests/smoke.sh` wiring check added.
+
+## 2026.5.26
 
 ### Changed — license
 
@@ -39,7 +45,7 @@ The project follows a simple release log:
   `uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp`
   invocation.
 
-## Unreleased — pre-0.2.0
+## 2026.5.20
 
 ### Added
 
@@ -63,7 +69,7 @@ The project follows a simple release log:
 - The server is designed for trusted self-hosting.
 - Arbitrary URL fetching is available and must be protected behind network controls or an auth layer when exposed beyond trusted users.
 
-## 0.1.0
+## 2026.5.1
 
 Initial public release of `searxng-mcp`.
 

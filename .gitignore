@@ -25,3 +25,14 @@ env/
 # Editor and OS noise
 .DS_Store
 Thumbs.db
+
+# real eval/corpus data — never commit
+eval_real_corpus.json
+.real_corpus_manifest.json
+
+# round-specific campaign sweep scripts (one-time artifacts)
+scripts/sweep_r*.py
+
+# eval outputs
+eval_run_*.json
+EVAL_REPORT.md
