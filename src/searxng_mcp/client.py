@@ -108,7 +108,13 @@ class SearxngClient:
     async def _search_on_backend(self, backend_url: str, client: httpx.AsyncClient, params: dict[str, Any]) -> BackendResponse:
         cleaned = self._clean_params(params)
         started = time.perf_counter()
-        response = await client.get("/search", params=cleaned)
+        try:
+            response = await client.get("/search", params=cleaned)
+        except httpx.HTTPError as exc:
+            raise BackendRequestError(
+                f"SearXNG backend unreachable: {exc!r}",
+                url=f"{backend_url}/search",
+            ) from exc
         elapsed_ms = (time.perf_counter() - started) * 1000
         if response.status_code >= 400:
             raise BackendRequestError(
@@ -157,7 +163,13 @@ class SearxngClient:
 
     async def _ping_backend(self, backend_url: str, client: httpx.AsyncClient) -> BackendResponse:
         started = time.perf_counter()
-        response = await client.get("/")
+        try:
+            response = await client.get("/")
+        except httpx.HTTPError as exc:
+            raise BackendRequestError(
+                f"SearXNG backend unreachable: {exc!r}",
+                url=f"{backend_url}/",
+            ) from exc
         elapsed_ms = (time.perf_counter() - started) * 1000
         if response.status_code >= 400:
             raise BackendRequestError(

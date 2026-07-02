@@ -102,3 +102,57 @@ def test_search_falls_back_to_secondary_backend(tmp_path: Path) -> None:
         asyncio.run(run())
     finally:
         asyncio.run(client.close())
+
+
+def test_search_falls_back_when_primary_unreachable(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "primary.local":
+            raise httpx.ConnectError("All connection attempts failed", request=request)
+        if request.url.host == "fallback.local" and request.url.path == "/search":
+            return httpx.Response(
+                200,
+                request=request,
+                json={
+                    "query": "test",
+                    "number_of_results": 1,
+                    "results": [
+                        {
+                            "url": "https://example.com",
+                            "title": "Fallback result",
+                            "content": "from fallback",
+                            "engine": "mock",
+                            "score": 1.0,
+                        }
+                    ],
+                    "answers": [],
+                    "corrections": [],
+                    "infoboxes": [],
+                    "suggestions": [],
+                    "unresponsive_engines": [],
+                },
+            )
+        if request.url.host == "fallback.local" and request.url.path == "/":
+            return httpx.Response(200, request=request, text="ok")
+        return httpx.Response(404, request=request, text="not found")
+
+    client = SearxngClient(make_settings(tmp_path), transport=httpx.MockTransport(handler))
+
+    async def run() -> None:
+        result = await client.search(
+            {
+                "q": "test",
+                "format": "json",
+                "categories": "general",
+                "language": "en",
+                "pageno": 1,
+                "safesearch": 0,
+            }
+        )
+        ping = await client.ping()
+        assert result.backend_url == "http://fallback.local"
+        assert ping.backend_url == "http://fallback.local"
+
+    try:
+        asyncio.run(run())
+    finally:
+        asyncio.run(client.close())
