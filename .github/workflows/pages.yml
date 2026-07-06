@@ -22,14 +22,14 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.0
 
       - name: Install Python
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v6.3.0
         with:
           python-version: "3.13"
 
@@ -67,7 +67,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
