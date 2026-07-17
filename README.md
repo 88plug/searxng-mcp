@@ -185,7 +185,11 @@ The benchmark reports raw backend latency, token-visible output size, merged mul
 
 ## Documentation
 
+Full site: **[88plug.github.io/searxng-mcp](https://88plug.github.io/searxng-mcp/)**
+
 - [Getting started](docs/getting-started.md)
+- [Installation](docs/installation.md)
+- [Configuration](docs/configuration.md)
 - [Deployment](docs/deployment.md)
 - [Security](docs/security.md)
 - [Tool reference](docs/reference/tools.md)

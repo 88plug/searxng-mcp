@@ -16,17 +16,15 @@ The goal is to combine search, fetch, caching, render fallback, and low-token ou
 
 ## What `searxng-mcp` Adds
 
-- `stdio` and `streamable-http`
-- `search_many`
-- `search_and_fetch`
-- `research`
-- `fetch_many`
-- compact visible output with hidden raw payloads
-- cache-backed repeated use
-- automatic render fallback
-- rendered fetch controls
-- benchmark tooling
-- docs-site ready structure
+| Area | Detail |
+| --- | --- |
+| Transports | `stdio`, `streamable-http`, `sse` |
+| Research tools | `search_many`, `search_and_fetch`, `research`, `fetch_many` |
+| Token shape | Compact visible output; full payloads in `_meta` |
+| Cache | Disk-backed search + fetch TTLs |
+| Render | Automatic Playwright fallback + force flag |
+| Ops | Benchmark harness, Docker + hardened Compose |
+| Clients | Copy-paste configs for Claude, Codex, gemini-cli, opencode |
 
 ## Why That Matters
 

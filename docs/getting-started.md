@@ -1,60 +1,95 @@
 # Getting Started
 
-This page gives the shortest path from a local SearXNG instance to a usable `searxng-mcp` server.
+Shortest path from a running SearXNG instance to a usable `searxng-mcp` server.
 
 ## Prerequisites
 
-- Python 3.11 or newer
-- A running SearXNG instance
+- A reachable SearXNG instance (default: `http://127.0.0.1:8890`)
+- Python 3.11+ if you run from source or `uvx`
 - Optional: local Chromium or Chrome for faster first rendered fetch
 
-## Local Development
+## 1. Install
 
-The contributor path is the fastest way to validate the server from source:
+=== "Claude Code plugin"
+
+    ```text
+    /plugin marketplace add 88plug/claude-code-plugins
+    /plugin install searxng@88plug
+    ```
+
+    The plugin launcher (`scripts/mcp-server.sh`) resolves `uv`, provisions
+    Python ≥3.11, and runs the package from the local plugin install.
+
+    To point at a non-default backend without editing the plugin cache, create
+    `~/.config/searxng-mcp/env`:
+
+    ```sh
+    export SEARXNG_MCP_BASE_URL=http://your-searxng-host:8890
+    ```
+
+=== "uvx (any MCP client)"
+
+    ```bash
+    export SEARXNG_MCP_BASE_URL=http://127.0.0.1:8890
+    uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp
+    ```
+
+    Wire that command into your client's MCP config. Copy-paste shapes for
+    Claude Desktop, Codex CLI, gemini-cli, and opencode are in
+    [Client Configs](reference/client-configs.md).
+
+=== "From source"
+
+    ```bash
+    git clone https://github.com/88plug/searxng-mcp.git
+    cd searxng-mcp
+    uv sync --group dev
+    export SEARXNG_MCP_BASE_URL=http://127.0.0.1:8890
+    uv run searxng-mcp
+    ```
+
+## 2. Confirm health
+
+Call the `health` tool from your MCP client. Expect:
+
+- backend reachable
+- cache path present
+- render status (available / unavailable)
+
+If backend is down, fix SearXNG reachability first (`SEARXNG_MCP_BASE_URL`).
+
+## 3. First tools
+
+| Goal | Tool |
+| --- | --- |
+| One known query | `search` |
+| Search + page excerpts | `search_and_fetch` |
+| Multi-angle investigation | `research` |
+| Read a URL you already have | `fetch_url` |
+
+Visible output is intentionally compact. Full payloads live in MCP `_meta`
+(and `structuredContent` where the client surfaces it).
+
+## Transports
+
+| Mode | When |
+| --- | --- |
+| `stdio` (default) | Local desktop clients, single user |
+| `streamable-http` | Shared service / reverse proxy |
+
+HTTP example:
 
 ```bash
-cd searxng-mcp
-uv sync --group dev
-uv run searxng-mcp --help
+uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp \
+  --transport streamable-http --host 0.0.0.0 --port 8811
 ```
 
-If you prefer `pip`:
+Treat exposed HTTP like any SSRF-capable internal service — see
+[Security](security.md).
 
-```bash
-cd searxng-mcp
-python -m pip install -e .
-searxng-mcp --help
-```
+## Next
 
-If the machine does not already have Chromium or Chrome, the first rendered fetch downloads Playwright Chromium into the user cache automatically.
-
-## First Run
-
-By default the server speaks `stdio` and points at a local SearXNG backend.
-
-```bash
-export SEARXNG_MCP_BASE_URL=http://127.0.0.1:8890
-searxng-mcp
-```
-
-To run it as a shared HTTP service:
-
-```bash
-searxng-mcp --transport streamable-http --host 0.0.0.0 --port 8811
-```
-
-## First Tool
-
-Start with `search` if you already know the query.
-
-Use `search_and_fetch` if you need search plus source reading in one step.
-
-Use `research` if the answer needs multiple search variants and citations.
-
-## Recommended Next Reads
-
-- [Installation](installation.md)
-- [Configuration](configuration.md)
-- [Deployment](deployment.md)
-- [Security](security.md)
-- [Tool Reference](reference/tools.md)
+- [Installation](installation.md) — Docker, hardened Compose, pip
+- [Configuration](configuration.md) — full env / flag reference
+- [Tool Reference](reference/tools.md) — parameters and defaults
+- [Client Configs](reference/client-configs.md) — per-client JSON/TOML

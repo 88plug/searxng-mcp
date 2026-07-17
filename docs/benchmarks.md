@@ -15,14 +15,22 @@
 
 ## Run It
 
+From a checkout (after `uv sync`):
+
+```bash
+uv run searxng-mcp-bench --rounds 3 --max-results 5
+```
+
+If the entry point is on `PATH`:
+
 ```bash
 searxng-mcp-bench --rounds 3 --max-results 5
 ```
 
-If your fetch target should be different:
+Custom fetch target:
 
 ```bash
-searxng-mcp-bench \
+uv run searxng-mcp-bench \
   --rounds 3 \
   --max-results 5 \
   --fetch-url https://docs.python.org/3/library/asyncio-task.html

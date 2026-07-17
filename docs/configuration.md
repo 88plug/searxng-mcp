@@ -8,7 +8,7 @@ CLI flags override environment-derived defaults.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `SEARXNG_MCP_BASE_URL` | `http://127.0.0.1:8890` | Primary SearXNG backend |
+| `SEARXNG_MCP_BASE_URL` | `http://127.0.0.1:8890` | Primary SearXNG backend (`SEARXNG_BASE_URL` is accepted as a fallback alias) |
 | `SEARXNG_MCP_FALLBACK_BASE_URLS` | unset | Comma-separated fallback SearXNG backends |
 | `SEARXNG_MCP_TRANSPORT` | `stdio` | `stdio`, `streamable-http`, or `sse` |
 | `SEARXNG_MCP_HOST` | `127.0.0.1` | HTTP bind host |
@@ -85,20 +85,22 @@ With no such file, the manifest default applies unchanged.
 
 ## CLI Flags
 
-The main flags are:
+Flags override the matching env-derived defaults when set:
 
-- `--transport`
-- `--base-url`
-- `--host`
-- `--port`
-- `--mount-path`
-- `--cache-dir`
-- `--search-timeout`
-- `--fetch-timeout`
-- `--search-concurrency`
-- `--fetch-concurrency`
-- `--search-cache-ttl`
-- `--fetch-cache-ttl`
+| Flag | Maps to |
+| --- | --- |
+| `--transport` | `SEARXNG_MCP_TRANSPORT` (`stdio` / `streamable-http` / `sse`) |
+| `--base-url` | `SEARXNG_MCP_BASE_URL` |
+| `--host` | `SEARXNG_MCP_HOST` |
+| `--port` | `SEARXNG_MCP_PORT` |
+| `--mount-path` | Path prefix for streamable-http / SSE (e.g. `/mcp`) |
+| `--cache-dir` | `SEARXNG_MCP_CACHE_DIR` |
+| `--search-timeout` | `SEARXNG_MCP_SEARCH_TIMEOUT` |
+| `--fetch-timeout` | `SEARXNG_MCP_FETCH_TIMEOUT` |
+| `--search-concurrency` | `SEARXNG_MCP_SEARCH_CONCURRENCY` |
+| `--fetch-concurrency` | `SEARXNG_MCP_FETCH_CONCURRENCY` |
+| `--search-cache-ttl` | `SEARXNG_MCP_SEARCH_CACHE_TTL` |
+| `--fetch-cache-ttl` | `SEARXNG_MCP_FETCH_CACHE_TTL` |
 
 ## Practical Defaults
 
@@ -106,3 +108,4 @@ The main flags are:
 - use `streamable-http` only when you need a shared endpoint
 - keep `fetch_*` behind a trusted boundary
 - leave render automatic unless the page needs browser execution
+- prefer `~/.config/searxng-mcp/env` for plugin backend overrides (survives updates)

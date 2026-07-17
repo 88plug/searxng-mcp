@@ -2,11 +2,13 @@
 
 ## Do I need SearXNG running locally?
 
-Yes. `searxng-mcp` is an MCP layer over a SearXNG backend.
+You need a **reachable** SearXNG backend. Local (`127.0.0.1:8890`) is the default,
+but any URL you set with `SEARXNG_MCP_BASE_URL` works.
 
 ## Can I run it without Docker?
 
-Yes. Use `stdio` locally or install the Python package directly.
+Yes. Prefer the Claude Code plugin or `uvx --from git+https://github.com/88plug/searxng-mcp searxng-mcp`.
+Docker is optional for self-hosted HTTP.
 
 ## Does it support rendered pages?
 

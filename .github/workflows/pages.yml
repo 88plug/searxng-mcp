@@ -45,7 +45,7 @@ jobs:
 
           if [ -f mkdocs.yml ]; then
             python -m pip install --upgrade pip mkdocs mkdocs-material
-            mkdocs build --site-dir site
+            mkdocs build --strict --site-dir site
             exit 0
           fi
 
@@ -58,7 +58,7 @@ jobs:
             - Home: index.md
           EOF
           python -m pip install --upgrade pip mkdocs mkdocs-material
-          mkdocs build --site-dir site
+          mkdocs build --strict --site-dir site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5.0.0
