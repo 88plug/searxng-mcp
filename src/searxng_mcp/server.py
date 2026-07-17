@@ -284,8 +284,9 @@ UrlsParam = Annotated[
 ]
 
 
+# Tool display titles go on @server.tool(title=...), not ToolAnnotations.
+# Inspector / MCP 2025-11-25 emit top-level tool "title"; annotations.title is not enough.
 READ_ONLY_SEARCH = ToolAnnotations(
-    title="SearXNG search",
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=False,
@@ -293,7 +294,6 @@ READ_ONLY_SEARCH = ToolAnnotations(
 )
 
 READ_ONLY_FETCH = ToolAnnotations(
-    title="Web page fetch",
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=True,
@@ -301,7 +301,6 @@ READ_ONLY_FETCH = ToolAnnotations(
 )
 
 READ_ONLY_HEALTH = ToolAnnotations(
-    title="searxng-mcp health",
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=True,
@@ -494,6 +493,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="search",
+        title="Search",
         description=(
             "Search the open web via SearXNG for a single query and return a compact, "
             "token-efficient summary of the top results.\n"
@@ -538,6 +538,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="search_many",
+        title="Search Many",
         description=(
             "Run several SearXNG searches in parallel, then dedupe and merge their result sets into "
             "a single ranked list.\n"
@@ -583,6 +584,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="search_and_fetch",
+        title="Search and Fetch",
         description=(
             "Search SearXNG for one query and fetch+extract the top results in a single call. "
             "Combines `search` and `fetch_many` for one-query research workflows.\n"
@@ -636,6 +638,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="research",
+        title="Research",
         description=(
             "Run multi-query research: search several queries in parallel, merge and dedupe results, "
             "then fetch and extract the strongest sources with citations.\n"
@@ -689,6 +692,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="fetch_url",
+        title="Fetch URL",
         description=(
             "Fetch one URL, extract readable content (Readability-style), and return a compact "
             "excerpt plus link list. The full extracted text is preserved in hidden `_meta.full_text`.\n"
@@ -724,6 +728,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="fetch_many",
+        title="Fetch Many",
         description=(
             "Fetch and extract several URLs in parallel. URLs are deduplicated after canonicalisation. "
             "Each per-source full text is preserved in hidden `_meta.pages[].full_text`.\n"
@@ -760,6 +765,7 @@ def create_server(settings: Settings) -> MCPBundle:
 
     @server.tool(
         name="health",
+        title="Health",
         description=(
             "Report backend, cache, and render-engine readiness. Takes no arguments.\n"
             "Best for: a one-shot check before a session, debugging a 'search failed' result, "
