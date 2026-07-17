@@ -29,7 +29,7 @@ DEFAULT_FETCH_URLS = [
 ]
 
 
-def _percentile(values: list[float], pct: float) -> float:
+def _percentile(values: Sequence[float], pct: float) -> float:
     if not values:
         return 0.0
     values = sorted(values)

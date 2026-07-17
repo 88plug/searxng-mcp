@@ -4,6 +4,7 @@ import asyncio
 import subprocess
 import sys
 from pathlib import Path
+from typing import cast
 
 from searxng_mcp.browser import RenderedFetchClient
 from searxng_mcp.settings import Settings
@@ -132,7 +133,7 @@ def test_render_client_auto_installs_playwright_browser(
     monkeypatch.setattr(browser_module.subprocess, "run", fake_run)
 
     client = RenderedFetchClient(make_settings(tmp_path))
-    context = asyncio.run(client._ensure_context())
+    context = cast(FakeContext, asyncio.run(client._ensure_context()))
 
     assert context.timeout_ms == 10000
     assert context.routes == ["**/*"]

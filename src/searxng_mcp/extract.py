@@ -13,6 +13,11 @@ from pdfminer.high_level import extract_text as extract_pdf_text
 
 from .render import clean_text, ensure_http_url, normalize_url, truncate_text
 
+
+def _rel_contains_canonical(value: str | None) -> bool:
+    return bool(value and "canonical" in value)
+
+
 _HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 _BLOCK_TAGS = {"p", "li", "blockquote", "pre", "td", "th"}
 _BOILERPLATE_TAGS = {
@@ -262,9 +267,7 @@ def _extract_from_html(
         soup, "description", "og:description", "twitter:description"
     )
     author = _meta_value(soup, "author", "article:author", "parsely-author")
-    canonical = soup.find(
-        "link", attrs={"rel": lambda value: value and "canonical" in value}
-    )
+    canonical = soup.find("link", attrs={"rel": _rel_contains_canonical})
     if canonical and canonical.get("href"):
         metadata["canonical_url"] = urljoin(base_url, str(canonical.get("href")))
     headings, blocks, links = _extract_text_blocks(soup, base_url, max_links)

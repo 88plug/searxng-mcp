@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from typing import Literal, cast
 
 from .server import create_server
 from .settings import load_settings
+
+Transport = Literal["stdio", "sse", "streamable-http"]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -96,10 +99,11 @@ def main() -> None:
     bundle = create_server(settings)
     try:
         mount_path = _normalize_mount_path(args.mount_path)
-        if settings.transport == "streamable-http" and mount_path:
+        transport = cast(Transport, settings.transport)
+        if transport == "streamable-http" and mount_path:
             _run_streamable_http_with_mount_path(bundle, settings, mount_path)
         else:
-            bundle.server.run(settings.transport, mount_path=mount_path)
+            bundle.server.run(transport, mount_path=mount_path)
     finally:
         asyncio.run(bundle.service.close())
 

@@ -1,0 +1,19 @@
+{
+  "include": ["src", "tests", "benchmarks", ".ci"],
+  "exclude": [
+    "**/__pycache__",
+    ".venv",
+    "venv",
+    "site",
+    ".ruff_cache",
+    "vendor"
+  ],
+  "extraPaths": ["src"],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "venvPath": ".",
+  "venv": ".venv",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false
+}

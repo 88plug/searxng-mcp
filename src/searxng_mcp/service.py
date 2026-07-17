@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, field
 import inspect
-from typing import Any
+from typing import Any, cast
 import hashlib
 import asyncio
 import time
@@ -11,8 +11,7 @@ import time
 import httpx
 import orjson
 from diskcache import Cache
-from mcp.server.fastmcp import Context
-from mcp.types import CallToolResult
+from mcp.types import CallToolResult, TextContent
 
 from .browser import RenderedFetchClient, RenderedFetchError
 from .client import BackendRequestError, FetchClient, SearxngClient
@@ -99,14 +98,14 @@ async def _call_ctx_method(method: Any, *args: Any, **kwargs: Any) -> None:
         raise
 
 
-async def _ctx_info(ctx: Context | None, message: str, **kwargs: Any) -> None:
+async def _ctx_info(ctx: Any | None, message: str, **kwargs: Any) -> None:
     if ctx is None:
         return
     await _call_ctx_method(ctx.info, message, **kwargs)
 
 
 async def _ctx_report_progress(
-    ctx: Context | None, current: int, total: int, message: str
+    ctx: Any | None, current: int, total: int, message: str
 ) -> None:
     if ctx is None:
         return
@@ -365,10 +364,10 @@ class SearxngMCPService:
         self,
         settings: Settings,
         *,
-        search_client: SearxngClient | None = None,
-        fetch_client: FetchClient | None = None,
-        render_client: RenderedFetchClient | None = None,
-        cache: Cache | None = None,
+        search_client: Any | None = None,
+        fetch_client: Any | None = None,
+        render_client: Any | None = None,
+        cache: Any | None = None,
     ) -> None:
         self.settings = settings
         self.search_client = search_client or SearxngClient(settings)
@@ -429,11 +428,11 @@ class SearxngMCPService:
         cache_key = f"search:{_search_cache_key(params)}"
         cached, cache_hit = self._cache_get(cache_key)
         if cache_hit and isinstance(cached, dict):
-            payload = (
-                cached.get("payload")
-                if isinstance(cached.get("payload"), dict)
-                else cached
-            )
+            maybe_payload = cached.get("payload")
+            if isinstance(maybe_payload, dict):
+                payload: dict[str, Any] = maybe_payload
+            else:
+                payload = cached
             backend_url = clean_text(
                 str(cached.get("backend_url") or self.settings.normalized_base_url)
             )
@@ -641,7 +640,7 @@ class SearxngMCPService:
         safesearch: int | None = None,
         max_results: int | None = None,
         ttl: int | None = None,
-        ctx: Context | None = None,
+        ctx: Any | None = None,
     ) -> CallToolResult:
         try:
             outcome = await self._search_once(
@@ -695,11 +694,11 @@ class SearxngMCPService:
         cache_key = f"fetch:{_fetch_cache_key({'url': normalized, 'rendered': rendered, 'render_wait_ms': effective_render_wait_ms})}"
         cached, cache_hit = self._cache_get(cache_key)
         if cache_hit and isinstance(cached, dict):
-            cached_document = (
-                cached.get("document")
-                if isinstance(cached.get("document"), dict)
-                else cached
-            )
+            maybe_document = cached.get("document")
+            if isinstance(maybe_document, dict):
+                cached_document: dict[str, Any] = maybe_document
+            else:
+                cached_document = cached
             document = _document_from_cache(cached_document, max_excerpt_chars)
             render_mode = clean_text(
                 str(
@@ -910,7 +909,7 @@ class SearxngMCPService:
         max_results: int | None = None,
         concurrency: int | None = None,
         ttl: int | None = None,
-        ctx: Context | None = None,
+        ctx: Any | None = None,
     ) -> CallToolResult:
         clean_queries: list[str] = []
         seen_queries: set[str] = set()
@@ -1062,7 +1061,7 @@ class SearxngMCPService:
         rendered: bool = False,
         render_wait_ms: int | None = None,
         ttl: int | None = None,
-        ctx: Context | None = None,
+        ctx: Any | None = None,
     ) -> CallToolResult:
         search_result = await self.search(
             query=query,
@@ -1084,10 +1083,10 @@ class SearxngMCPService:
         structured = search_result.structuredContent or {}
         meta = search_result.meta or {}
         raw_payload = meta.get("raw_payload") or {}
-        raw_results = (
-            raw_payload.get("results") if isinstance(raw_payload, dict) else []
+        maybe_results = (
+            raw_payload.get("results") if isinstance(raw_payload, dict) else None
         )
-        raw_results = [item for item in raw_results if isinstance(item, dict)]
+        raw_results = [item for item in (maybe_results or []) if isinstance(item, dict)]
         selected = []
         seen_urls: set[str] = set()
         for raw in raw_results:
@@ -1159,7 +1158,13 @@ class SearxngMCPService:
             elapsed_ms=round(elapsed_ms, 2),
         )
 
-        lines = [search_result.content[0].text, "", f"Fetched pages: {len(excerpts)}"]
+        first_block = search_result.content[0]
+        first_text = (
+            first_block.text
+            if isinstance(first_block, TextContent)
+            else str(getattr(first_block, "text", first_block))
+        )
+        lines = [first_text, "", f"Fetched pages: {len(excerpts)}"]
         lines.append(f"Rendered fetch: {render_mode}")
         for index, item in enumerate(excerpts, start=1):
             source = item["source"]
@@ -1235,7 +1240,7 @@ class SearxngMCPService:
         render_wait_ms: int | None = None,
         concurrency: int | None = None,
         ttl: int | None = None,
-        ctx: Context | None = None,
+        ctx: Any | None = None,
     ) -> CallToolResult:
         search_result = await self.search_many(
             queries=queries,
@@ -1395,7 +1400,7 @@ class SearxngMCPService:
         rendered: bool = False,
         render_wait_ms: int | None = None,
         ttl: int | None = None,
-        ctx: Context | None = None,
+        ctx: Any | None = None,
     ) -> CallToolResult:
         try:
             normalized = normalize_requested_url(url)
@@ -1454,7 +1459,7 @@ class SearxngMCPService:
         render_wait_ms: int | None = None,
         concurrency: int | None = None,
         ttl: int | None = None,
-        ctx: Context | None = None,
+        ctx: Any | None = None,
     ) -> CallToolResult:
         clean_urls: list[str] = []
         seen_urls: set[str] = set()
@@ -1638,7 +1643,7 @@ class SearxngMCPService:
         )
         return make_result(text, structured=structured, meta=meta)
 
-    async def health(self, *, ctx: Context | None = None) -> CallToolResult:
+    async def health(self, *, ctx: Any | None = None) -> CallToolResult:
         started = time.perf_counter()
         try:
             ping = await self.search_client.ping()
@@ -1657,6 +1662,8 @@ class SearxngMCPService:
             "installed" if render_status.get("playwright_installed") else "missing"
         )
         render_browser = render_status.get("browser_executable") or "none"
+        cache_entries = cast(int, self.cache.__len__())
+        cache_volume = self.cache.volume()
         text = "\n".join(
             [
                 "searxng-mcp: healthy",
@@ -1666,7 +1673,7 @@ class SearxngMCPService:
                 f"render browser candidate: {render_browser}",
                 f"render auto fallback: {'enabled' if self.settings.render_auto_fallback else 'disabled'}",
                 f"health check elapsed: {elapsed_ms:.1f} ms",
-                f"cache entries: {len(self.cache)} | cache volume: {self.cache.volume()} bytes | hits: {hits} | misses: {misses}",
+                f"cache entries: {cache_entries} | cache volume: {cache_volume} bytes | hits: {hits} | misses: {misses}",
             ]
         )
         await _ctx_info(
@@ -1684,8 +1691,8 @@ class SearxngMCPService:
             "configured_backends": configured_backends,
             "render_support": render_status,
             "render_auto_fallback": self.settings.render_auto_fallback,
-            "cache_entries": len(self.cache),
-            "cache_volume_bytes": self.cache.volume(),
+            "cache_entries": cache_entries,
+            "cache_volume_bytes": cache_volume,
             "cache_hits": hits,
             "cache_misses": misses,
         }
@@ -1694,7 +1701,7 @@ class SearxngMCPService:
             "configured_backends": configured_backends,
             "render_support": render_status,
             "cache_dir": str(self.settings.cache_dir),
-            "cache_entries": len(self.cache),
-            "cache_volume_bytes": self.cache.volume(),
+            "cache_entries": cache_entries,
+            "cache_volume_bytes": cache_volume,
         }
         return make_result(text, structured=structured, meta=meta)

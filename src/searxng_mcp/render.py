@@ -6,7 +6,7 @@ import math
 import re
 from typing import Any
 
-from mcp.types import CallToolResult, TextContent
+from mcp.types import CallToolResult, ContentBlock, TextContent
 
 _WHITESPACE_RE = re.compile(r"\s+")
 _TRACKING_PREFIXES = ("utm_",)
@@ -149,8 +149,18 @@ def list_as_text(values: Iterable[Any], limit: int = 8) -> str:
     return ", ".join(clipped) + (" …" if len(cleaned) > limit else "")
 
 
-def text_content(text: str) -> list[TextContent]:
+def text_content(text: str) -> list[ContentBlock]:
     return [TextContent(type="text", text=text)]
+
+
+def content_text(result: CallToolResult) -> str:
+    for block in result.content:
+        if isinstance(block, TextContent):
+            return block.text
+        text = getattr(block, "text", None)
+        if text is not None:
+            return str(text)
+    return ""
 
 
 def make_result(

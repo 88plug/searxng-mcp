@@ -3,15 +3,33 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
+from mcp.types import CallToolResult
 
 from searxng_mcp.browser import RenderedResponse
 from searxng_mcp.client import BackendResponse, FetchResponse
-from searxng_mcp.render import make_result
+from searxng_mcp.render import content_text, make_result
 from searxng_mcp.service import SearxngMCPService
 from searxng_mcp.settings import Settings
+
+
+def sc(result: CallToolResult) -> dict[str, Any]:
+    data = result.structuredContent
+    assert data is not None
+    return data
+
+
+def meta_of(result: CallToolResult) -> dict[str, Any]:
+    data = result.meta
+    assert data is not None
+    return data
+
+
+def text_of(result: CallToolResult) -> str:
+    return content_text(result)
 
 
 def make_settings(tmp_path: Path) -> Settings:
@@ -192,7 +210,12 @@ class FastMCPLikeContext:
         self.log_calls.append((level, message))
 
     async def info(self, message: str, **extra: object) -> None:
-        await self.log("info", message, **extra)
+        logger_name = extra.get("logger_name")
+        await self.log(
+            "info",
+            message,
+            logger_name=str(logger_name) if logger_name is not None else None,
+        )
 
     async def report_progress(
         self, progress: float, total: float | None = None, message: str | None = None
@@ -257,13 +280,11 @@ def test_search_caches_and_returns_compact_summary(tmp_path: Path) -> None:
         second = await service.search(query="python asyncio gather", max_results=1)
 
         assert not first.isError
-        assert first.structuredContent["cache_hit"] is False
-        assert first.structuredContent["backend_url"] == "http://searx.local"
-        assert second.structuredContent["cache_hit"] is True
-        assert "Results: 2 total, 1 shown" in first.content[0].text
-        assert (
-            first.structuredContent["top_results"][0]["title"] == "Coroutines and tasks"
-        )
+        assert sc(first)["cache_hit"] is False
+        assert sc(first)["backend_url"] == "http://searx.local"
+        assert sc(second)["cache_hit"] is True
+        assert "Results: 2 total, 1 shown" in text_of(first)
+        assert sc(first)["top_results"][0]["title"] == "Coroutines and tasks"
         assert len(search_client.calls) == 1
 
     import asyncio
@@ -350,10 +371,10 @@ def test_search_many_dedupes_and_merges(tmp_path: Path) -> None:
             queries=["python asyncio gather", "python taskgroup"], max_results=10
         )
         assert not result.isError
-        assert "Queries: 2" in result.content[0].text
-        assert result.structuredContent["unique_results"] == 3
+        assert "Queries: 2" in text_of(result)
+        assert sc(result)["unique_results"] == 3
         assert (
-            result.structuredContent["merged_results"][0]["canonical_url"]
+            sc(result)["merged_results"][0]["canonical_url"]
             == "https://docs.python.org/3/library/asyncio-task.html"
         )
 
@@ -522,10 +543,10 @@ def test_research_merges_search_and_batch_fetch(
             fetch_limit=2,
         )
         assert not result.isError
-        assert "Merged results:" in result.content[0].text
-        assert "Fetched sources:" in result.content[0].text
-        assert result.structuredContent["unique_results"] == 3
-        assert len(result.structuredContent["fetched_pages"]) == 2
+        assert "Merged results:" in text_of(result)
+        assert "Fetched sources:" in text_of(result)
+        assert sc(result)["unique_results"] == 3
+        assert len(sc(result)["fetched_pages"]) == 2
         assert len(search_client.calls) == 2
         assert fetch_many_calls == [
             [
@@ -577,15 +598,13 @@ def test_fetch_url_extracts_and_caches(tmp_path: Path) -> None:
             url="https://example.org/article", max_excerpt_chars=120, max_links=2
         )
         assert not first.isError
-        assert first.structuredContent["cache_hit"] is False
-        assert second.structuredContent["cache_hit"] is True
-        assert first.structuredContent["title"] == "Example Article"
-        assert "Heading One" in first.content[0].text
-        assert len(second.structuredContent["excerpt"]) > len(
-            first.structuredContent["excerpt"]
-        )
-        assert len(first.structuredContent["links"]) == 1
-        assert len(second.structuredContent["links"]) == 2
+        assert sc(first)["cache_hit"] is False
+        assert sc(second)["cache_hit"] is True
+        assert sc(first)["title"] == "Example Article"
+        assert "Heading One" in text_of(first)
+        assert len(sc(second)["excerpt"]) > len(sc(first)["excerpt"])
+        assert len(sc(first)["links"]) == 1
+        assert len(sc(second)["links"]) == 2
         assert len(fetch_client.calls) == 1
 
     import asyncio
@@ -640,18 +659,16 @@ def test_fetch_url_rendered_extracts_and_caches(tmp_path: Path) -> None:
             max_links=2,
         )
         assert not first.isError
-        assert first.structuredContent["rendered"] is True
-        assert first.structuredContent["render_mode"] == "forced"
-        assert first.structuredContent["cache_hit"] is False
-        assert second.structuredContent["cache_hit"] is True
-        assert first.structuredContent["title"] == "Rendered Example"
-        assert "Rendered Heading" in first.content[0].text
-        assert "Rendered: forced" in first.content[0].text
-        assert len(second.structuredContent["excerpt"]) > len(
-            first.structuredContent["excerpt"]
-        )
-        assert len(first.structuredContent["links"]) == 1
-        assert len(second.structuredContent["links"]) == 2
+        assert sc(first)["rendered"] is True
+        assert sc(first)["render_mode"] == "forced"
+        assert sc(first)["cache_hit"] is False
+        assert sc(second)["cache_hit"] is True
+        assert sc(first)["title"] == "Rendered Example"
+        assert "Rendered Heading" in text_of(first)
+        assert "Rendered: forced" in text_of(first)
+        assert len(sc(second)["excerpt"]) > len(sc(first)["excerpt"])
+        assert len(sc(first)["links"]) == 1
+        assert len(sc(second)["links"]) == 2
         assert render_client.calls == [("https://example.org/rendered", 250)]
 
     asyncio.run(run())
@@ -685,11 +702,11 @@ def test_fetch_url_plain_fetch_failure_falls_back_to_render(tmp_path: Path) -> N
     async def run() -> None:
         result = await service.fetch_url(url="https://example.org/fallback")
         assert not result.isError
-        assert result.structuredContent["rendered"] is True
-        assert result.structuredContent["render_mode"] == "auto"
-        assert result.meta["render_mode"] == "auto"
-        assert result.meta["document"]["rendered"] is True
-        assert "Rendered: auto" in result.content[0].text
+        assert sc(result)["rendered"] is True
+        assert sc(result)["render_mode"] == "auto"
+        assert meta_of(result)["render_mode"] == "auto"
+        assert meta_of(result)["document"]["rendered"] is True
+        assert "Rendered: auto" in text_of(result)
         assert (
             render_client.calls
             and render_client.calls[0][0] == "https://example.org/fallback"
@@ -741,12 +758,12 @@ def test_fetch_many_dedupes_and_reuses_cache(tmp_path: Path) -> None:
             max_excerpt_chars=80,
         )
         assert not first.isError
-        assert first.structuredContent["successful_urls"] == 2
-        assert first.structuredContent["cache_hits"] == 0
-        assert second.structuredContent["cache_hits"] == 2
+        assert sc(first)["successful_urls"] == 2
+        assert sc(first)["cache_hits"] == 0
+        assert sc(second)["cache_hits"] == 2
         assert len(fetch_client.calls) == 2
-        assert "URLs: 2" in first.content[0].text
-        assert "Fetched pages:" in first.content[0].text
+        assert "URLs: 2" in text_of(first)
+        assert "Fetched pages:" in text_of(first)
 
     asyncio.run(run())
 
@@ -799,16 +816,13 @@ def test_fetch_many_auto_render_keeps_render_state_in_sync(tmp_path: Path) -> No
             urls=["https://example.org/app"], max_excerpt_chars=80, max_links=1
         )
         assert not result.isError
-        assert result.structuredContent["rendered"] is True
-        assert result.structuredContent["render_mode"] == "auto"
-        assert result.meta["rendered"] is True
-        assert result.meta["render_mode"] == "auto"
-        assert result.structuredContent["documents"][0]["document"]["rendered"] is True
-        assert (
-            result.structuredContent["documents"][0]["document"]["render_mode"]
-            == "auto"
-        )
-        assert result.meta["documents"][0]["render_mode"] == "auto"
+        assert sc(result)["rendered"] is True
+        assert sc(result)["render_mode"] == "auto"
+        assert meta_of(result)["rendered"] is True
+        assert meta_of(result)["render_mode"] == "auto"
+        assert sc(result)["documents"][0]["document"]["rendered"] is True
+        assert sc(result)["documents"][0]["document"]["render_mode"] == "auto"
+        assert meta_of(result)["documents"][0]["render_mode"] == "auto"
         assert (
             render_client.calls
             and render_client.calls[0][0] == "https://example.org/app"
@@ -877,17 +891,12 @@ def test_search_and_fetch_rendered_marks_rendered_pages(tmp_path: Path) -> None:
             query="python asyncio gather", fetch_limit=1
         )
         assert not result.isError
-        assert "Rendered fetch: auto" in result.content[0].text
-        assert "Rendered: auto" in result.content[0].text
-        assert result.structuredContent["rendered"] is True
-        assert result.structuredContent["render_mode"] == "auto"
-        assert (
-            result.structuredContent["fetched_pages"][0]["document"]["rendered"] is True
-        )
-        assert (
-            result.structuredContent["fetched_pages"][0]["document"]["render_mode"]
-            == "auto"
-        )
+        assert "Rendered fetch: auto" in text_of(result)
+        assert "Rendered: auto" in text_of(result)
+        assert sc(result)["rendered"] is True
+        assert sc(result)["render_mode"] == "auto"
+        assert sc(result)["fetched_pages"][0]["document"]["rendered"] is True
+        assert sc(result)["fetched_pages"][0]["document"]["render_mode"] == "auto"
         assert (
             render_client.calls
             and render_client.calls[0][0] == "https://example.org/rendered"
@@ -932,16 +941,13 @@ def test_search_and_fetch_combines_search_and_extraction(tmp_path: Path) -> None
             query="python asyncio gather", fetch_limit=1
         )
         assert not result.isError
-        assert "Fetched pages: 1" in result.content[0].text
-        assert "Body text." in result.content[0].text
-        assert (
-            result.structuredContent["fetched_pages"][0]["document"]["title"]
-            == "Example Article"
-        )
+        assert "Fetched pages: 1" in text_of(result)
+        assert "Body text." in text_of(result)
+        assert sc(result)["fetched_pages"][0]["document"]["title"] == "Example Article"
         repeat = await service.search_and_fetch(
             query="python asyncio gather", fetch_limit=1
         )
-        assert repeat.structuredContent["fetched_pages"][0]["cache_hit"] is True
+        assert sc(repeat)["fetched_pages"][0]["cache_hit"] is True
         assert len(fetch_client.calls) == 1
 
     import asyncio
@@ -960,13 +966,11 @@ def test_health_reports_backend_cache_and_render_support(tmp_path: Path) -> None
     async def run() -> None:
         result = await service.health()
         assert not result.isError
-        assert result.structuredContent["ok"] is True
-        assert result.structuredContent["configured_backends"] == 1
-        assert (
-            result.structuredContent["render_support"]["playwright_installed"] is True
-        )
-        assert "render dependency: installed" in result.content[0].text
-        assert "render auto fallback: enabled" in result.content[0].text
+        assert sc(result)["ok"] is True
+        assert sc(result)["configured_backends"] == 1
+        assert sc(result)["render_support"]["playwright_installed"] is True
+        assert "render dependency: installed" in text_of(result)
+        assert "render auto fallback: enabled" in text_of(result)
 
     import asyncio
 

@@ -2,18 +2,28 @@ from __future__ import annotations
 
 from pathlib import Path
 import asyncio
+from typing import Any
 
 import orjson
+from mcp.types import TextContent
 
 from searxng_mcp.server import create_server
 
 from test_service import make_settings
 
 
+def _prompt_text(message: Any) -> str:
+    content = message.content
+    if isinstance(content, TextContent):
+        return content.text
+    text = getattr(content, "text", None)
+    return str(text) if text is not None else str(content)
+
+
 def test_server_exposes_guide_resource_and_research_prompts(tmp_path: Path) -> None:
     bundle = create_server(make_settings(tmp_path))
 
-    config_contents = asyncio.run(bundle.server.read_resource("searxng://config"))
+    config_contents = list(asyncio.run(bundle.server.read_resource("searxng://config")))
     assert len(config_contents) == 1
     assert config_contents[0].mime_type == "application/json"
     config = orjson.loads(config_contents[0].content)
@@ -23,7 +33,7 @@ def test_server_exposes_guide_resource_and_research_prompts(tmp_path: Path) -> N
     assert config["prompts_optional"] is True
     assert config["render_sandbox"] is False
 
-    guide_contents = asyncio.run(bundle.server.read_resource("searxng://guide"))
+    guide_contents = list(asyncio.run(bundle.server.read_resource("searxng://guide")))
     assert len(guide_contents) == 1
     assert guide_contents[0].mime_type == "application/json"
     guide = orjson.loads(guide_contents[0].content)
@@ -42,8 +52,9 @@ def test_server_exposes_guide_resource_and_research_prompts(tmp_path: Path) -> N
         )
     )
     assert len(quick_prompt.messages) == 1
-    assert "Quick lookup topic: python asyncio" in quick_prompt.messages[0].content.text
-    assert "search_and_fetch" in quick_prompt.messages[0].content.text
+    quick_text = _prompt_text(quick_prompt.messages[0])
+    assert "Quick lookup topic: python asyncio" in quick_text
+    assert "search_and_fetch" in quick_text
 
     deep_prompt = asyncio.run(
         bundle.server.get_prompt(
@@ -51,10 +62,8 @@ def test_server_exposes_guide_resource_and_research_prompts(tmp_path: Path) -> N
         )
     )
     assert len(deep_prompt.messages) == 1
-    assert (
-        "Preferred workflow: search_many -> research -> fetch_many"
-        in deep_prompt.messages[0].content.text
-    )
+    deep_text = _prompt_text(deep_prompt.messages[0])
+    assert "Preferred workflow: search_many -> research -> fetch_many" in deep_text
 
     router_prompt = asyncio.run(
         bundle.server.get_prompt(
@@ -62,4 +71,4 @@ def test_server_exposes_guide_resource_and_research_prompts(tmp_path: Path) -> N
         )
     )
     assert len(router_prompt.messages) == 1
-    assert "quick_lookup" in router_prompt.messages[0].content.text
+    assert "quick_lookup" in _prompt_text(router_prompt.messages[0])
