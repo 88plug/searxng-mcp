@@ -22,7 +22,7 @@ Calver-style tags (`YYYY.M.N`), most recent first.
   Apache-2.0 Future License). Competing Use (offering this software or a
   substantially similar substitute as a commercial product/service) is not a
   Permitted Purpose. Each released version converts to Apache License 2.0 on the
-  second anniversary of its release date. See `LICENSE.md`.
+  second anniversary of its release date. See `LICENSE`.
 
 ### Added — Claude Code plugin wrapper
 

@@ -25,10 +25,10 @@ The project follows a calver release log (`YYYY.M.N`), most recent first.
   A Competing Use — offering searxng-mcp (or a substantially similar
   substitute) as a commercial product or service — is no longer a Permitted
   Purpose. Each released version automatically converts to the Apache License
-  2.0 on the second anniversary of its release date. See [`LICENSE.md`](./LICENSE.md).
-- `LICENSE` (MIT) removed in favor of `LICENSE.md` (FSL-1.1-ALv2).
+  2.0 on the second anniversary of its release date. See [`LICENSE`](./LICENSE).
+- `LICENSE` (MIT) removed in favor of `LICENSE` (FSL-1.1-ALv2).
 - `pyproject.toml` license expression updated to `LicenseRef-FSL-1.1-ALv2`
-  (PEP 639); `license-files = ["LICENSE.md"]`; `setuptools>=77`.
+  (PEP 639); `license-files = ["LICENSE"]`; `setuptools>=77`.
 
 ### Added — Claude Code plugin wrapper
 

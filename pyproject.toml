@@ -9,7 +9,7 @@ description = "Fast, token-efficient MCP server for SearXNG with stdio and strea
 readme = "README.md"
 requires-python = ">=3.11"
 license = "LicenseRef-FSL-1.1-ALv2"
-license-files = ["LICENSE.md"]
+license-files = ["LICENSE"]
 authors = [{ name = "88plug", email = "andrew@88plug.com" }]
 keywords = [
   "mcp",

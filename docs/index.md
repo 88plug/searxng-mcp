@@ -3,7 +3,7 @@
 Token-efficient MCP server for SearXNG metasearch — private web search and page extraction for Claude Code and any MCP client.
 
 [![plugin-validate](https://github.com/88plug/searxng-mcp/actions/workflows/plugin-validate.yml/badge.svg)](https://github.com/88plug/searxng-mcp/actions/workflows/plugin-validate.yml)
-[![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue?style=flat)](https://github.com/88plug/searxng-mcp/blob/main/LICENSE.md)
+[![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue?style=flat)](https://github.com/88plug/searxng-mcp/blob/main/LICENSE)
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?style=flat)](https://github.com/88plug/claude-code-plugins)
 [![GitHub](https://img.shields.io/badge/GitHub-88plug%2Fsearxng--mcp-181717?style=flat&logo=github)](https://github.com/88plug/searxng-mcp)
 
