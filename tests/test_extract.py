@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
 
 import httpx
 
@@ -8,7 +7,9 @@ import searxng_mcp.extract as extract_module
 from searxng_mcp.extract import extract_from_html, extract_from_response
 
 
-def make_response(url: str, content: str, content_type: str = "text/html; charset=utf-8") -> httpx.Response:
+def make_response(
+    url: str, content: str, content_type: str = "text/html; charset=utf-8"
+) -> httpx.Response:
     return httpx.Response(
         200,
         content=content.encode("utf-8"),
@@ -47,7 +48,9 @@ def test_extract_html_document() -> None:
 
 
 def test_extract_pdf_document(monkeypatch) -> None:
-    monkeypatch.setattr(extract_module, "extract_pdf_text", lambda *args, **kwargs: "PDF text body")
+    monkeypatch.setattr(
+        extract_module, "extract_pdf_text", lambda *args, **kwargs: "PDF text body"
+    )
     response = httpx.Response(
         200,
         content=b"%PDF-1.4 test",

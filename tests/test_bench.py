@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from pathlib import Path
 
 from searxng_mcp.bench import run_benchmark
-from searxng_mcp.client import BackendResponse
 from searxng_mcp.render import make_result
 
 from test_service import FakeSearchClient, make_settings, payload_for
@@ -44,14 +43,29 @@ class FakeBenchmarkService:
     async def search(self, *, query: str, max_results: int | None = None, **_: object):
         self.search_calls.append({"query": query, "max_results": max_results})
         cache_hit = self._cache_hit("search", query)
-        top_results = [{"title": f"{query} result", "url": f"https://example.org/{query.replace(' ', '-')}" }]
+        top_results = [
+            {
+                "title": f"{query} result",
+                "url": f"https://example.org/{query.replace(' ', '-')}",
+            }
+        ]
         return make_result(
             f"search service {query}",
-            structured={"cache_hit": cache_hit, "result_count": len(top_results), "top_results": top_results},
-            meta={"cache_hit": cache_hit, "result_count": len(top_results), "top_results": top_results},
+            structured={
+                "cache_hit": cache_hit,
+                "result_count": len(top_results),
+                "top_results": top_results,
+            },
+            meta={
+                "cache_hit": cache_hit,
+                "result_count": len(top_results),
+                "top_results": top_results,
+            },
         )
 
-    async def search_many(self, *, queries: list[str], max_results: int | None = None, **_: object):
+    async def search_many(
+        self, *, queries: list[str], max_results: int | None = None, **_: object
+    ):
         self.search_many_calls.append(list(queries))
         key = "\u0000".join(queries)
         cache_hit = self._cache_hit("search_many", key)
@@ -72,11 +86,21 @@ class FakeBenchmarkService:
             },
         )
 
-    async def research(self, *, queries: list[str], max_results: int | None = None, fetch_limit: int | None = None, **_: object):
+    async def research(
+        self,
+        *,
+        queries: list[str],
+        max_results: int | None = None,
+        fetch_limit: int | None = None,
+        **_: object,
+    ):
         self.research_calls.append(list(queries))
         key = "\u0000".join(queries)
         cache_hit = self._cache_hit("research", key)
-        fetched_pages = [{"url": f"https://example.org/{index}", "render_mode": "off"} for index, _query in enumerate(queries[:2], start=1)]
+        fetched_pages = [
+            {"url": f"https://example.org/{index}", "render_mode": "off"}
+            for index, _query in enumerate(queries[:2], start=1)
+        ]
         return make_result(
             "research service",
             structured={
@@ -115,8 +139,18 @@ class FakeBenchmarkService:
         }
         return make_result(
             "fetch service",
-            structured={"cache_hit": cache_hit, "rendered": False, "render_mode": "off", "document": document},
-            meta={"cache_hit": cache_hit, "rendered": False, "render_mode": "off", "document": document},
+            structured={
+                "cache_hit": cache_hit,
+                "rendered": False,
+                "render_mode": "off",
+                "document": document,
+            },
+            meta={
+                "cache_hit": cache_hit,
+                "rendered": False,
+                "render_mode": "off",
+                "document": document,
+            },
         )
 
     async def fetch_many(self, *, urls: list[str], **_: object):
@@ -182,7 +216,9 @@ class FakeBenchmarkServer:
         return await method(**arguments)
 
 
-def test_run_benchmark_separates_service_and_tool_layers(monkeypatch, tmp_path: Path) -> None:
+def test_run_benchmark_separates_service_and_tool_layers(
+    monkeypatch, tmp_path: Path
+) -> None:
     settings = make_settings(tmp_path)
     queries = ["python asyncio gather", "python taskgroup", "postgres jsonb indexing"]
     search_client = FakeSearchClient(

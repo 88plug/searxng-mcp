@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 import argparse
 import asyncio
-from dataclasses import dataclass
 from pathlib import Path
 import statistics
-import tempfile
 import time
 from typing import Any
 
@@ -46,7 +44,9 @@ def _percentile(values: list[float], pct: float) -> float:
 
 def _summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
     successes = [sample for sample in samples if not sample.get("error")]
-    latencies = [float(sample["elapsed_ms"]) for sample in successes if "elapsed_ms" in sample]
+    latencies = [
+        float(sample["elapsed_ms"]) for sample in successes if "elapsed_ms" in sample
+    ]
     tokens = [int(sample.get("visible_tokens", 0)) for sample in successes]
     return {
         "count": len(samples),
@@ -72,7 +72,9 @@ def _summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
 def _tool_result_text(result: Any) -> str:
     if hasattr(result, "content"):
         content = getattr(result, "content", None)
-        if isinstance(content, Sequence) and not isinstance(content, (str, bytes, bytearray)):
+        if isinstance(content, Sequence) and not isinstance(
+            content, (str, bytes, bytearray)
+        ):
             parts: list[str] = []
             for block in content:
                 text = getattr(block, "text", None)
@@ -122,7 +124,9 @@ def _tool_result_structured(result: Any) -> dict[str, Any]:
 async def _call_tool(server: Any, name: str, arguments: dict[str, Any]) -> Any:
     tool_manager = getattr(server, "_tool_manager", None)
     if tool_manager is not None:
-        return await tool_manager.call_tool(name, arguments, context=None, convert_result=True)
+        return await tool_manager.call_tool(
+            name, arguments, context=None, convert_result=True
+        )
     return await server.call_tool(name, arguments)
 
 
@@ -145,7 +149,9 @@ async def _measure_round(
         if not is_error and isinstance(result, dict):
             is_error = bool(result.get("isError"))
         if is_error:
-            sample["error"] = str(structured.get("error") or text or "tool returned an error result")
+            sample["error"] = str(
+                structured.get("error") or text or "tool returned an error result"
+            )
         if extra is not None:
             sample.update(extra(result, structured, text))
         return sample
@@ -201,7 +207,9 @@ async def _run_search_round(
         runner,
         extra=lambda _result, structured, _text: {
             "query": query,
-            "result_count": structured.get("result_count", len(structured.get("top_results") or [])),
+            "result_count": structured.get(
+                "result_count", len(structured.get("top_results") or [])
+            ),
             "cache_hit": structured.get("cache_hit", False),
             "top_results": len(structured.get("top_results") or []),
             "max_results": max_results,
@@ -320,20 +328,36 @@ async def run_benchmark(
 
             service.cache.clear()
             for query in queries:
-                service_search_cold.append(await _run_search_round(lambda: service.search(query=query, max_results=max_results), query, max_results))
-                service_search_warm.append(await _run_search_round(lambda: service.search(query=query, max_results=max_results), query, max_results))
+                service_search_cold.append(
+                    await _run_search_round(
+                        lambda: service.search(query=query, max_results=max_results),
+                        query,
+                        max_results,
+                    )
+                )
+                service_search_warm.append(
+                    await _run_search_round(
+                        lambda: service.search(query=query, max_results=max_results),
+                        query,
+                        max_results,
+                    )
+                )
 
             service.cache.clear()
             service_many_cold.append(
                 await _run_search_many_round(
-                    lambda: service.search_many(queries=queries, max_results=max_results),
+                    lambda: service.search_many(
+                        queries=queries, max_results=max_results
+                    ),
                     queries,
                     max_results,
                 )
             )
             service_many_warm.append(
                 await _run_search_many_round(
-                    lambda: service.search_many(queries=queries, max_results=max_results),
+                    lambda: service.search_many(
+                        queries=queries, max_results=max_results
+                    ),
                     queries,
                     max_results,
                 )
@@ -342,14 +366,22 @@ async def run_benchmark(
             service.cache.clear()
             service_research_cold.append(
                 await _run_research_round(
-                    lambda: service.research(queries=queries, max_results=max_results, fetch_limit=min(3, max_results)),
+                    lambda: service.research(
+                        queries=queries,
+                        max_results=max_results,
+                        fetch_limit=min(3, max_results),
+                    ),
                     queries,
                     max_results,
                 )
             )
             service_research_warm.append(
                 await _run_research_round(
-                    lambda: service.research(queries=queries, max_results=max_results, fetch_limit=min(3, max_results)),
+                    lambda: service.research(
+                        queries=queries,
+                        max_results=max_results,
+                        fetch_limit=min(3, max_results),
+                    ),
                     queries,
                     max_results,
                 )
@@ -387,14 +419,22 @@ async def run_benchmark(
             for query in queries:
                 tool_search_cold.append(
                     await _run_search_round(
-                        lambda: _call_tool(bundle.server, "search", {"query": query, "max_results": max_results}),
+                        lambda: _call_tool(
+                            bundle.server,
+                            "search",
+                            {"query": query, "max_results": max_results},
+                        ),
                         query,
                         max_results,
                     )
                 )
                 tool_search_warm.append(
                     await _run_search_round(
-                        lambda: _call_tool(bundle.server, "search", {"query": query, "max_results": max_results}),
+                        lambda: _call_tool(
+                            bundle.server,
+                            "search",
+                            {"query": query, "max_results": max_results},
+                        ),
                         query,
                         max_results,
                     )
@@ -403,14 +443,22 @@ async def run_benchmark(
             service.cache.clear()
             tool_many_cold.append(
                 await _run_search_many_round(
-                    lambda: _call_tool(bundle.server, "search_many", {"queries": queries, "max_results": max_results}),
+                    lambda: _call_tool(
+                        bundle.server,
+                        "search_many",
+                        {"queries": queries, "max_results": max_results},
+                    ),
                     queries,
                     max_results,
                 )
             )
             tool_many_warm.append(
                 await _run_search_many_round(
-                    lambda: _call_tool(bundle.server, "search_many", {"queries": queries, "max_results": max_results}),
+                    lambda: _call_tool(
+                        bundle.server,
+                        "search_many",
+                        {"queries": queries, "max_results": max_results},
+                    ),
                     queries,
                     max_results,
                 )
@@ -422,7 +470,11 @@ async def run_benchmark(
                     lambda: _call_tool(
                         bundle.server,
                         "research",
-                        {"queries": queries, "max_results": max_results, "fetch_limit": min(3, max_results)},
+                        {
+                            "queries": queries,
+                            "max_results": max_results,
+                            "fetch_limit": min(3, max_results),
+                        },
                     ),
                     queries,
                     max_results,
@@ -433,7 +485,11 @@ async def run_benchmark(
                     lambda: _call_tool(
                         bundle.server,
                         "research",
-                        {"queries": queries, "max_results": max_results, "fetch_limit": min(3, max_results)},
+                        {
+                            "queries": queries,
+                            "max_results": max_results,
+                            "fetch_limit": min(3, max_results),
+                        },
                     ),
                     queries,
                     max_results,
@@ -457,13 +513,17 @@ async def run_benchmark(
             service.cache.clear()
             tool_fetch_many_cold.append(
                 await _run_fetch_many_round(
-                    lambda: _call_tool(bundle.server, "fetch_many", {"urls": DEFAULT_FETCH_URLS}),
+                    lambda: _call_tool(
+                        bundle.server, "fetch_many", {"urls": DEFAULT_FETCH_URLS}
+                    ),
                     DEFAULT_FETCH_URLS,
                 )
             )
             tool_fetch_many_warm.append(
                 await _run_fetch_many_round(
-                    lambda: _call_tool(bundle.server, "fetch_many", {"urls": DEFAULT_FETCH_URLS}),
+                    lambda: _call_tool(
+                        bundle.server, "fetch_many", {"urls": DEFAULT_FETCH_URLS}
+                    ),
                     DEFAULT_FETCH_URLS,
                 )
             )
@@ -526,10 +586,14 @@ async def run_benchmark(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Benchmark searxng-mcp against a local SearXNG instance")
+    parser = argparse.ArgumentParser(
+        description="Benchmark searxng-mcp against a local SearXNG instance"
+    )
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--max-results", type=int, default=5)
-    parser.add_argument("--fetch-url", default="https://docs.python.org/3/library/asyncio-task.html")
+    parser.add_argument(
+        "--fetch-url", default="https://docs.python.org/3/library/asyncio-task.html"
+    )
     parser.add_argument("--queries", nargs="*", default=DEFAULT_QUERIES)
     parser.add_argument("--base-url", default=None)
     parser.add_argument("--cache-dir", default=None)
@@ -545,7 +609,12 @@ def main() -> None:
     if args.cache_dir:
         settings.cache_dir = Path(args.cache_dir).expanduser()
     if args.fetch_verify_tls is not None:
-        settings.fetch_verify_tls = str(args.fetch_verify_tls).strip().lower() in {"1", "true", "yes", "on"}
+        settings.fetch_verify_tls = str(args.fetch_verify_tls).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
 
     report = asyncio.run(
         run_benchmark(

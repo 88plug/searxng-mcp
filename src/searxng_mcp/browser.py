@@ -48,7 +48,12 @@ class RenderedFetchClient:
     def _browser_executable(self) -> str | None:
         if self.settings.render_browser_path:
             return self.settings.render_browser_path
-        for candidate in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable"):
+        for candidate in (
+            "chromium",
+            "chromium-browser",
+            "google-chrome",
+            "google-chrome-stable",
+        ):
             path = which(candidate)
             if path:
                 return path
@@ -67,7 +72,9 @@ class RenderedFetchClient:
             "wait_ms": self.settings.render_wait_ms,
         }
 
-    def _should_auto_install_browser(self, exc: Exception, *, executable_path: str | None) -> bool:
+    def _should_auto_install_browser(
+        self, exc: Exception, *, executable_path: str | None
+    ) -> bool:
         if executable_path is not None or self._browser_install_attempted:
             return False
         message = str(exc).lower()
@@ -95,13 +102,24 @@ class RenderedFetchClient:
         except subprocess.CalledProcessError as exc:
             output = (exc.stderr or exc.stdout or "").strip().splitlines()
             detail = f": {output[-1]}" if output else ""
-            raise RenderedFetchError(f"Failed to install Chromium for rendered fetch{detail}") from exc
+            raise RenderedFetchError(
+                f"Failed to install Chromium for rendered fetch{detail}"
+            ) from exc
         except Exception as exc:  # noqa: BLE001
-            raise RenderedFetchError(f"Failed to install Chromium for rendered fetch: {exc}") from exc
+            raise RenderedFetchError(
+                f"Failed to install Chromium for rendered fetch: {exc}"
+            ) from exc
 
-    async def _route_handler(self, route) -> Any:  # pragma: no cover - Playwright callback
+    async def _route_handler(
+        self, route
+    ) -> Any:  # pragma: no cover - Playwright callback
         resource_type = route.request.resource_type
-        if self.settings.render_block_resources and resource_type in {"image", "media", "font", "stylesheet"}:
+        if self.settings.render_block_resources and resource_type in {
+            "image",
+            "media",
+            "font",
+            "stylesheet",
+        }:
             await route.abort()
             return None
         await route.continue_()
@@ -136,16 +154,24 @@ class RenderedFetchClient:
             try:
                 self._browser = await self._playwright.chromium.launch(**launch_kwargs)
             except Exception as exc:  # noqa: BLE001
-                if self._should_auto_install_browser(exc, executable_path=executable_path):
+                if self._should_auto_install_browser(
+                    exc, executable_path=executable_path
+                ):
                     await self._install_playwright_browser()
                     try:
-                        self._browser = await self._playwright.chromium.launch(**launch_kwargs)
+                        self._browser = await self._playwright.chromium.launch(
+                            **launch_kwargs
+                        )
                     except Exception as retry_exc:  # noqa: BLE001
                         await self.close()
-                        raise RenderedFetchError(f"Failed to start Chromium: {retry_exc}") from retry_exc
+                        raise RenderedFetchError(
+                            f"Failed to start Chromium: {retry_exc}"
+                        ) from retry_exc
                 else:
                     await self.close()
-                    raise RenderedFetchError(f"Failed to start Chromium: {exc}") from exc
+                    raise RenderedFetchError(
+                        f"Failed to start Chromium: {exc}"
+                    ) from exc
 
             try:
                 self._context = await self._browser.new_context(
@@ -156,7 +182,9 @@ class RenderedFetchClient:
                 )
                 if self.settings.render_block_resources:
                     await self._context.route("**/*", self._route_handler)
-                self._context.set_default_timeout(int(self.settings.render_timeout * 1000))
+                self._context.set_default_timeout(
+                    int(self.settings.render_timeout * 1000)
+                )
             except Exception as exc:  # noqa: BLE001
                 await self.close()
                 raise RenderedFetchError(f"Failed to start Chromium: {exc}") from exc
@@ -164,7 +192,9 @@ class RenderedFetchClient:
             return self._context
 
     async def get(self, url: str, *, wait_ms: int | None = None) -> RenderedResponse:
-        limit_ms = max(0, wait_ms if wait_ms is not None else self.settings.render_wait_ms)
+        limit_ms = max(
+            0, wait_ms if wait_ms is not None else self.settings.render_wait_ms
+        )
         async with self._semaphore:
             context = await self._ensure_context()
             page = await context.new_page()
@@ -176,8 +206,13 @@ class RenderedFetchClient:
                     timeout=int(self.settings.render_timeout * 1000),
                 )
                 if response is None:
-                    raise RenderedFetchError(f"Rendered fetch returned no response for {url}")
-                if response.status < HTTPStatus.OK or response.status >= HTTPStatus.MULTIPLE_CHOICES:
+                    raise RenderedFetchError(
+                        f"Rendered fetch returned no response for {url}"
+                    )
+                if (
+                    response.status < HTTPStatus.OK
+                    or response.status >= HTTPStatus.MULTIPLE_CHOICES
+                ):
                     raise RenderedFetchError(
                         f"Rendered fetch returned HTTP {response.status} for {url}"
                     )
@@ -213,7 +248,9 @@ class RenderedFetchClient:
                     title=title or extracted.title,
                 )
             except Exception as exc:  # noqa: BLE001
-                raise RenderedFetchError(f"Rendered fetch failed for {url}: {exc}") from exc
+                raise RenderedFetchError(
+                    f"Rendered fetch failed for {url}: {exc}"
+                ) from exc
             finally:
                 await page.close()
 

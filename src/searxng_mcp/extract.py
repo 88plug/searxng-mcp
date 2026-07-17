@@ -15,7 +15,17 @@ from .render import clean_text, ensure_http_url, normalize_url, truncate_text
 
 _HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 _BLOCK_TAGS = {"p", "li", "blockquote", "pre", "td", "th"}
-_BOILERPLATE_TAGS = {"script", "style", "noscript", "svg", "iframe", "footer", "header", "nav", "aside"}
+_BOILERPLATE_TAGS = {
+    "script",
+    "style",
+    "noscript",
+    "svg",
+    "iframe",
+    "footer",
+    "header",
+    "nav",
+    "aside",
+}
 _CONTENT_SELECTORS = [
     "article",
     "main",
@@ -35,8 +45,17 @@ _RENDER_HINT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("initial_state", re.compile(r"window\.__INITIAL_STATE__", re.IGNORECASE)),
     ("hydration", re.compile(r"hydrat(?:e|ion)", re.IGNORECASE)),
     ("app_root", re.compile(r'id=["\'](?:root|app)["\']', re.IGNORECASE)),
-    ("json_script", re.compile(r'<script[^>]+type=["\']application/json["\']', re.IGNORECASE)),
-    ("js_required", re.compile(r"(enable javascript|javascript required|please (?:turn on|enable) javascript)", re.IGNORECASE)),
+    (
+        "json_script",
+        re.compile(r'<script[^>]+type=["\']application/json["\']', re.IGNORECASE),
+    ),
+    (
+        "js_required",
+        re.compile(
+            r"(enable javascript|javascript required|please (?:turn on|enable) javascript)",
+            re.IGNORECASE,
+        ),
+    ),
 )
 
 
@@ -111,7 +130,9 @@ def _candidate_container(soup: BeautifulSoup):
     return max(candidates, key=score)
 
 
-def _collect_blocks(container, base_url: str, max_links: int) -> tuple[list[str], list[str], list[dict[str, str]]]:
+def _collect_blocks(
+    container, base_url: str, max_links: int
+) -> tuple[list[str], list[str], list[dict[str, str]]]:
     headings: list[str] = []
     blocks: list[str] = []
     links: list[dict[str, str]] = []
@@ -159,7 +180,9 @@ def _collect_blocks(container, base_url: str, max_links: int) -> tuple[list[str]
     return headings, blocks, links
 
 
-def _extract_text_blocks(soup: BeautifulSoup, base_url: str, max_links: int) -> tuple[list[str], list[str], list[dict[str, str]]]:
+def _extract_text_blocks(
+    soup: BeautifulSoup, base_url: str, max_links: int
+) -> tuple[list[str], list[str], list[dict[str, str]]]:
     container = _candidate_container(soup)
     if container is None:
         return [], [], []
@@ -171,7 +194,9 @@ def _render_profile(html: str, text: str) -> dict[str, Any]:
     script_count = len(re.findall(r"<script\b", html, flags=re.IGNORECASE))
     html_char_count = len(html)
     text_char_count = len(text)
-    text_density = round((text_char_count / html_char_count), 4) if html_char_count else 0.0
+    text_density = (
+        round((text_char_count / html_char_count), 4) if html_char_count else 0.0
+    )
 
     for label, pattern in _RENDER_HINT_PATTERNS:
         if pattern.search(html):
@@ -233,9 +258,13 @@ def _extract_from_html(
     title_tag = soup.find("title")
     if title_tag:
         title = clean_text(title_tag.get_text(" ", strip=True)) or None
-    description = _meta_value(soup, "description", "og:description", "twitter:description")
+    description = _meta_value(
+        soup, "description", "og:description", "twitter:description"
+    )
     author = _meta_value(soup, "author", "article:author", "parsely-author")
-    canonical = soup.find("link", attrs={"rel": lambda value: value and "canonical" in value})
+    canonical = soup.find(
+        "link", attrs={"rel": lambda value: value and "canonical" in value}
+    )
     if canonical and canonical.get("href"):
         metadata["canonical_url"] = urljoin(base_url, str(canonical.get("href")))
     headings, blocks, links = _extract_text_blocks(soup, base_url, max_links)
@@ -310,7 +339,9 @@ def extract_from_response(
             metadata["pdf_error"] = repr(exc)
             text = ""
         text = clean_text(text)
-        title = _content_disposition_filename(response.headers.get("content-disposition"))
+        title = _content_disposition_filename(
+            response.headers.get("content-disposition")
+        )
         full_text = text or ""
         char_count = len(full_text)
         excerpt = truncate_text(full_text, max_excerpt_chars)
@@ -333,7 +364,12 @@ def extract_from_response(
             rendered=False,
             metadata=metadata,
         )
-    elif content_type.startswith("text/") or "html" in content_type or "xml" in content_type or content_type == "":
+    elif (
+        content_type.startswith("text/")
+        or "html" in content_type
+        or "xml" in content_type
+        or content_type == ""
+    ):
         return _extract_from_html(
             html=response.text,
             url=url,

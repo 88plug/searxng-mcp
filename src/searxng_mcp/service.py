@@ -16,7 +16,12 @@ from mcp.types import CallToolResult
 
 from .browser import RenderedFetchClient, RenderedFetchError
 from .client import BackendRequestError, FetchClient, SearxngClient
-from .extract import ExtractedDocument, extract_from_html, extract_from_response, normalize_requested_url
+from .extract import (
+    ExtractedDocument,
+    extract_from_html,
+    extract_from_response,
+    normalize_requested_url,
+)
 from .render import (
     approximate_tokens,
     clean_text,
@@ -100,7 +105,9 @@ async def _ctx_info(ctx: Context | None, message: str, **kwargs: Any) -> None:
     await _call_ctx_method(ctx.info, message, **kwargs)
 
 
-async def _ctx_report_progress(ctx: Context | None, current: int, total: int, message: str) -> None:
+async def _ctx_report_progress(
+    ctx: Context | None, current: int, total: int, message: str
+) -> None:
     if ctx is None:
         return
     await _call_ctx_method(ctx.report_progress, current, total, message)
@@ -163,12 +170,15 @@ class MergedHit:
     first_seen_rank: int = 10**9
     first_seen_query_index: int = 10**9
 
-    def add(self, raw: dict[str, Any], query: str, query_index: int, raw_rank: int) -> None:
+    def add(
+        self, raw: dict[str, Any], query: str, query_index: int, raw_rank: int
+    ) -> None:
         score = _float(raw.get("score"))
         if score is None:
             score = 0.0
         if raw_rank < self.first_seen_rank or (
-            raw_rank == self.first_seen_rank and query_index < self.first_seen_query_index
+            raw_rank == self.first_seen_rank
+            and query_index < self.first_seen_query_index
         ):
             self.first_seen_rank = raw_rank
             self.first_seen_query_index = query_index
@@ -189,7 +199,9 @@ class MergedHit:
 
     @property
     def merged_score(self) -> float:
-        return self.best_score + (self.hit_count - 1) * 0.35 - self.first_seen_rank * 0.01
+        return (
+            self.best_score + (self.hit_count - 1) * 0.35 - self.first_seen_rank * 0.01
+        )
 
     def to_summary(self) -> dict[str, Any]:
         summary = result_summary(self.best_raw, None)
@@ -249,7 +261,9 @@ def _document_from_cache(data: dict[str, Any], excerpt_limit: int) -> ExtractedD
         metadata=dict(data.get("metadata") or {}),
     )
     document.excerpt = truncate_text(document.text, excerpt_limit)
-    document.truncated = document.char_count > excerpt_limit if excerpt_limit > 0 else False
+    document.truncated = (
+        document.char_count > excerpt_limit if excerpt_limit > 0 else False
+    )
     return document
 
 
@@ -273,7 +287,9 @@ def _summarize_render_modes(modes: list[str]) -> str:
     return "mixed"
 
 
-def _merge_query_outcomes(outcomes: list[QueryOutcome]) -> tuple[list[MergedHit], dict[str, Any]]:
+def _merge_query_outcomes(
+    outcomes: list[QueryOutcome],
+) -> tuple[list[MergedHit], dict[str, Any]]:
     groups: dict[str, MergedHit] = {}
     for query_index, outcome in enumerate(outcomes):
         for raw_rank, raw in enumerate(outcome.results):
@@ -293,14 +309,21 @@ def _merge_query_outcomes(outcomes: list[QueryOutcome]) -> tuple[list[MergedHit]
 
     merged = sorted(
         groups.values(),
-        key=lambda item: (-item.merged_score, item.first_seen_query_index, item.first_seen_rank, clean_text(str(item.best_raw.get("title") or ""))),
+        key=lambda item: (
+            -item.merged_score,
+            item.first_seen_query_index,
+            item.first_seen_rank,
+            clean_text(str(item.best_raw.get("title") or "")),
+        ),
     )
     stats = {
         "total_raw_results": sum(len(outcome.results) for outcome in outcomes),
         "unique_results": len(groups),
         "queries": [outcome.query for outcome in outcomes],
         "top_domains": Counter(
-            domain_from_url(item.best_raw.get("url") or "") for item in merged if item.best_raw.get("url")
+            domain_from_url(item.best_raw.get("url") or "")
+            for item in merged
+            if item.best_raw.get("url")
         ).most_common(5),
     }
     return merged, stats
@@ -351,7 +374,9 @@ class SearxngMCPService:
         self.search_client = search_client or SearxngClient(settings)
         self.fetch_client = fetch_client or FetchClient(settings)
         self.render_client = render_client or RenderedFetchClient(settings)
-        self.cache = cache or Cache(settings.cache_dir, size_limit=settings.cache_size_limit)
+        self.cache = cache or Cache(
+            settings.cache_dir, size_limit=settings.cache_size_limit
+        )
         self.cache.stats(enable=True)
         self._owns_search_client = search_client is None
         self._owns_fetch_client = fetch_client is None
@@ -404,9 +429,17 @@ class SearxngMCPService:
         cache_key = f"search:{_search_cache_key(params)}"
         cached, cache_hit = self._cache_get(cache_key)
         if cache_hit and isinstance(cached, dict):
-            payload = cached.get("payload") if isinstance(cached.get("payload"), dict) else cached
-            backend_url = clean_text(str(cached.get("backend_url") or self.settings.normalized_base_url))
-            request_url = clean_text(str(cached.get("request_url") or f"{backend_url}/search"))
+            payload = (
+                cached.get("payload")
+                if isinstance(cached.get("payload"), dict)
+                else cached
+            )
+            backend_url = clean_text(
+                str(cached.get("backend_url") or self.settings.normalized_base_url)
+            )
+            request_url = clean_text(
+                str(cached.get("request_url") or f"{backend_url}/search")
+            )
             return QueryOutcome(
                 query=clean_query,
                 backend_url=backend_url,
@@ -447,7 +480,9 @@ class SearxngMCPService:
         max_results: int,
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         raw_results = outcome.top_raw_results(max_results)
-        visible_results = [result_summary(item, rank + 1) for rank, item in enumerate(raw_results)]
+        visible_results = [
+            result_summary(item, rank + 1) for rank, item in enumerate(raw_results)
+        ]
         answers = outcome.payload.get("answers") or []
         corrections = outcome.payload.get("corrections") or []
         infoboxes = outcome.payload.get("infoboxes") or []
@@ -468,11 +503,24 @@ class SearxngMCPService:
         if infoboxes:
             first = infoboxes[0]
             if isinstance(first, dict):
-                title = clean_text(str(first.get("title") or first.get("infobox") or first.get("engine") or ""))
-                content = clean_text(str(first.get("content") or first.get("description") or ""))
+                title = clean_text(
+                    str(
+                        first.get("title")
+                        or first.get("infobox")
+                        or first.get("engine")
+                        or ""
+                    )
+                )
+                content = clean_text(
+                    str(first.get("content") or first.get("description") or "")
+                )
                 piece = title
                 if content:
-                    piece = f"{piece}: {truncate_text(content, 220)}" if piece else truncate_text(content, 220)
+                    piece = (
+                        f"{piece}: {truncate_text(content, 220)}"
+                        if piece
+                        else truncate_text(content, 220)
+                    )
                 if piece:
                     text_parts.append(f"Infobox: {piece}")
         if suggestions:
@@ -482,7 +530,9 @@ class SearxngMCPService:
         if visible_results:
             text_parts.append("")
             text_parts.append("Top results:")
-            text_parts.append(result_bullets([item for item in raw_results], start_rank=1))
+            text_parts.append(
+                result_bullets([item for item in raw_results], start_rank=1)
+            )
         text = "\n".join(text_parts).strip()
 
         structured = {
@@ -513,12 +563,19 @@ class SearxngMCPService:
 
     def _content_type_is_htmlish(self, content_type: str) -> bool:
         lowered = (content_type or "").lower()
-        return not lowered or lowered.startswith("text/") or "html" in lowered or "xml" in lowered
+        return (
+            not lowered
+            or lowered.startswith("text/")
+            or "html" in lowered
+            or "xml" in lowered
+        )
 
     def _should_auto_render(self, document: ExtractedDocument) -> bool:
         if not self.settings.render_auto_fallback:
             return False
-        if document.rendered or not self._content_type_is_htmlish(document.content_type):
+        if document.rendered or not self._content_type_is_htmlish(
+            document.content_type
+        ):
             return False
 
         profile = document.metadata.get("render_profile")
@@ -538,7 +595,15 @@ class SearxngMCPService:
                 return True
 
         lowered = f"{document.title or ''} {document.description or ''} {document.excerpt or ''}".lower()
-        if any(marker in lowered for marker in ("javascript required", "enable javascript", "please enable javascript", "turn on javascript")):
+        if any(
+            marker in lowered
+            for marker in (
+                "javascript required",
+                "enable javascript",
+                "please enable javascript",
+                "turn on javascript",
+            )
+        ):
             return True
         return False
 
@@ -588,7 +653,9 @@ class SearxngMCPService:
                 language=language or self.settings.default_language,
                 pageno=pageno,
                 time_range=time_range,
-                safesearch=self.settings.default_safesearch if safesearch is None else safesearch,
+                safesearch=self.settings.default_safesearch
+                if safesearch is None
+                else safesearch,
                 ttl=ttl,
             )
         except (ValueError, BackendRequestError, httpx.HTTPError) as exc:
@@ -599,8 +666,16 @@ class SearxngMCPService:
                 is_error=True,
             )
 
-        await _ctx_info(ctx, "search completed", query=query, cache_hit=outcome.cache_hit, elapsed_ms=round(outcome.elapsed_ms, 2))
-        text, structured, meta = self._render_search(outcome, max_results=max_results or self.settings.default_max_results)
+        await _ctx_info(
+            ctx,
+            "search completed",
+            query=query,
+            cache_hit=outcome.cache_hit,
+            elapsed_ms=round(outcome.elapsed_ms, 2),
+        )
+        text, structured, meta = self._render_search(
+            outcome, max_results=max_results or self.settings.default_max_results
+        )
         return make_result(text, structured=structured, meta=meta)
 
     async def _fetch_once(
@@ -614,13 +689,24 @@ class SearxngMCPService:
         ttl: int | None = None,
     ) -> FetchOutcome:
         normalized = _canonical_fetch_url(url)
-        effective_render_wait_ms = self.settings.render_wait_ms if render_wait_ms is None else render_wait_ms
+        effective_render_wait_ms = (
+            self.settings.render_wait_ms if render_wait_ms is None else render_wait_ms
+        )
         cache_key = f"fetch:{_fetch_cache_key({'url': normalized, 'rendered': rendered, 'render_wait_ms': effective_render_wait_ms})}"
         cached, cache_hit = self._cache_get(cache_key)
         if cache_hit and isinstance(cached, dict):
-            cached_document = cached.get("document") if isinstance(cached.get("document"), dict) else cached
+            cached_document = (
+                cached.get("document")
+                if isinstance(cached.get("document"), dict)
+                else cached
+            )
             document = _document_from_cache(cached_document, max_excerpt_chars)
-            render_mode = clean_text(str(cached.get("render_mode") or ("forced" if document.rendered else "off")))
+            render_mode = clean_text(
+                str(
+                    cached.get("render_mode")
+                    or ("forced" if document.rendered else "off")
+                )
+            )
             if render_mode not in {"off", "auto", "forced"}:
                 render_mode = "forced" if document.rendered else "off"
             return FetchOutcome(
@@ -659,7 +745,10 @@ class SearxngMCPService:
                 request_url = str(response.response.url)
                 if self._should_auto_render(document):
                     try:
-                        render_response, rendered_document = await self._render_and_extract(
+                        (
+                            render_response,
+                            rendered_document,
+                        ) = await self._render_and_extract(
                             url=normalized,
                             max_excerpt_chars=max_excerpt_chars,
                             max_links=max_links,
@@ -761,7 +850,9 @@ class SearxngMCPService:
             lines.append(f"Description: {truncate_text(document.description, 260)}")
         if document.author:
             lines.append(f"Author: {document.author}")
-        lines.append(f"Words: {document.word_count} | Characters: {document.char_count}")
+        lines.append(
+            f"Words: {document.word_count} | Characters: {document.char_count}"
+        )
         if document.headings:
             lines.append(f"Headings: {list_as_text(document.headings, limit=8)}")
         if excerpt:
@@ -844,7 +935,9 @@ class SearxngMCPService:
 
         async def run_query(index: int, query: str) -> QueryOutcome | None:
             try:
-                await _ctx_report_progress(ctx, index, len(clean_queries), f"searching {query}")
+                await _ctx_report_progress(
+                    ctx, index, len(clean_queries), f"searching {query}"
+                )
                 return await self._search_once(
                     query=query,
                     categories=categories or self.settings.default_categories,
@@ -854,7 +947,9 @@ class SearxngMCPService:
                     language=language or self.settings.default_language,
                     pageno=pageno,
                     time_range=time_range,
-                    safesearch=self.settings.default_safesearch if safesearch is None else safesearch,
+                    safesearch=self.settings.default_safesearch
+                    if safesearch is None
+                    else safesearch,
                     ttl=ttl,
                 )
             except Exception as exc:  # noqa: BLE001
@@ -866,7 +961,9 @@ class SearxngMCPService:
         while pending:
             batch = pending[:limit]
             pending = pending[limit:]
-            batch_outcomes = await asyncio.gather(*(run_query(index, query) for index, query in batch))
+            batch_outcomes = await asyncio.gather(
+                *(run_query(index, query) for index, query in batch)
+            )
             for item in batch_outcomes:
                 if item is not None:
                     outcomes.append(item)
@@ -891,7 +988,9 @@ class SearxngMCPService:
             f"Unique results: {stats['unique_results']} / raw {stats['total_raw_results']}",
         ]
         if stats["top_domains"]:
-            top_domains = ", ".join(f"{domain} ({count})" for domain, count in stats["top_domains"][:5])
+            top_domains = ", ".join(
+                f"{domain} ({count})" for domain, count in stats["top_domains"][:5]
+            )
             text_lines.append(f"Top domains: {top_domains}")
         if errors:
             text_lines.append(f"Query errors: {len(errors)}")
@@ -936,7 +1035,13 @@ class SearxngMCPService:
             "query_errors": errors,
             "token_estimate": approximate_tokens(text),
         }
-        await _ctx_info(ctx, "search_many completed", queries=len(clean_queries), successful=len(outcomes), elapsed_ms=round(elapsed_ms, 2))
+        await _ctx_info(
+            ctx,
+            "search_many completed",
+            queries=len(clean_queries),
+            successful=len(outcomes),
+            elapsed_ms=round(elapsed_ms, 2),
+        )
         return make_result(text, structured=structured, meta=meta)
 
     async def search_and_fetch(
@@ -979,7 +1084,9 @@ class SearxngMCPService:
         structured = search_result.structuredContent or {}
         meta = search_result.meta or {}
         raw_payload = meta.get("raw_payload") or {}
-        raw_results = raw_payload.get("results") if isinstance(raw_payload, dict) else []
+        raw_results = (
+            raw_payload.get("results") if isinstance(raw_payload, dict) else []
+        )
         raw_results = [item for item in raw_results if isinstance(item, dict)]
         selected = []
         seen_urls: set[str] = set()
@@ -1006,7 +1113,8 @@ class SearxngMCPService:
             try:
                 outcome = await self._fetch_once(
                     url=url,
-                    max_excerpt_chars=fetch_excerpt_chars or self.settings.default_excerpt_chars,
+                    max_excerpt_chars=fetch_excerpt_chars
+                    or self.settings.default_excerpt_chars,
                     max_links=8,
                     rendered=rendered,
                     render_wait_ms=render_wait_ms,
@@ -1035,7 +1143,13 @@ class SearxngMCPService:
                 excerpts.append(item)
 
         elapsed_ms = (time.perf_counter() - started) * 1000
-        render_mode = _summarize_render_modes([item.get("render_mode") or ("forced" if item.get("document", {}).get("rendered") else "off") for item in excerpts])
+        render_mode = _summarize_render_modes(
+            [
+                item.get("render_mode")
+                or ("forced" if item.get("document", {}).get("rendered") else "off")
+                for item in excerpts
+            ]
+        )
         await _ctx_info(
             ctx,
             "search_and_fetch completed",
@@ -1054,14 +1168,20 @@ class SearxngMCPService:
             lines.append(f"{index}. [{source['title']}]({source['url']})")
             if item.get("cache_hit"):
                 lines.append("   Cache: hit")
-            lines.append(f"   Rendered: {item.get('render_mode') or ('forced' if document.get('rendered') else 'no')}")
+            lines.append(
+                f"   Rendered: {item.get('render_mode') or ('forced' if document.get('rendered') else 'no')}"
+            )
             if document.get("title") and document.get("title") != source["title"]:
                 lines.append(f"   Page title: {document['title']}")
             if document.get("description"):
-                lines.append(f"   Description: {truncate_text(document['description'], 240)}")
+                lines.append(
+                    f"   Description: {truncate_text(document['description'], 240)}"
+                )
             lines.append(f"   Content: {truncate_text(item['content'], 900)}")
             if document.get("headings"):
-                lines.append(f"   Headings: {list_as_text(document['headings'], limit=6)}")
+                lines.append(
+                    f"   Headings: {list_as_text(document['headings'], limit=6)}"
+                )
             if document.get("links"):
                 lines.append("   Links:")
                 for link in document["links"][:4]:
@@ -1075,7 +1195,9 @@ class SearxngMCPService:
                 "fetched_pages": excerpts,
                 "fetch_errors": errors,
                 "fetch_elapsed_ms": round(elapsed_ms, 2),
-                "fetch_cache_hits": sum(1 for item in excerpts if item.get("cache_hit")),
+                "fetch_cache_hits": sum(
+                    1 for item in excerpts if item.get("cache_hit")
+                ),
                 "rendered": render_mode != "off",
                 "render_mode": render_mode,
                 "render_wait_ms": render_wait_ms,
@@ -1135,7 +1257,11 @@ class SearxngMCPService:
 
         search_structured = search_result.structuredContent or {}
         search_meta = search_result.meta or {}
-        merged_results = search_meta.get("merged_results") or search_structured.get("merged_results") or []
+        merged_results = (
+            search_meta.get("merged_results")
+            or search_structured.get("merged_results")
+            or []
+        )
         candidates: list[dict[str, Any]] = []
         seen_urls: set[str] = set()
         for raw in merged_results:
@@ -1154,7 +1280,8 @@ class SearxngMCPService:
 
         fetch_result = await self.fetch_many(
             urls=[str(item.get("url") or "") for item in candidates],
-            max_excerpt_chars=fetch_excerpt_chars or self.settings.default_excerpt_chars,
+            max_excerpt_chars=fetch_excerpt_chars
+            or self.settings.default_excerpt_chars,
             max_links=8,
             rendered=rendered,
             render_wait_ms=render_wait_ms,
@@ -1168,7 +1295,9 @@ class SearxngMCPService:
         fetch_structured = fetch_result.structuredContent or {}
         fetch_meta = fetch_result.meta or {}
         fetched_pages = fetch_structured.get("documents") or []
-        render_mode = clean_text(str(fetch_structured.get("render_mode") or "off")) or "off"
+        render_mode = (
+            clean_text(str(fetch_structured.get("render_mode") or "off")) or "off"
+        )
 
         lines = [
             f"Queries: {len(search_structured.get('queries') or queries)}",
@@ -1178,7 +1307,9 @@ class SearxngMCPService:
         ]
         if search_structured.get("top_domains"):
             top_domains = ", ".join(
-                f"{domain} ({count})" for domain, count in search_structured["top_domains"][:5] if domain
+                f"{domain} ({count})"
+                for domain, count in search_structured["top_domains"][:5]
+                if domain
             )
             if top_domains:
                 lines.append(f"Top domains: {top_domains}")
@@ -1190,19 +1321,30 @@ class SearxngMCPService:
         lines.append("Fetched sources:")
         for index, item in enumerate(fetched_pages, start=1):
             document = item.get("document") or {}
-            title = document.get("title") or document.get("final_url") or item.get("requested_url") or ""
+            title = (
+                document.get("title")
+                or document.get("final_url")
+                or item.get("requested_url")
+                or ""
+            )
             final_url = document.get("final_url") or item.get("requested_url") or ""
             lines.append(f"{index}. [{title}]({final_url})")
             if item.get("cache_hit"):
                 lines.append("   Cache: hit")
-            lines.append(f"   Rendered: {item.get('render_mode') or ('forced' if document.get('rendered') else 'no')}")
+            lines.append(
+                f"   Rendered: {item.get('render_mode') or ('forced' if document.get('rendered') else 'no')}"
+            )
             if document.get("description"):
-                lines.append(f"   Description: {truncate_text(str(document['description']), 240)}")
+                lines.append(
+                    f"   Description: {truncate_text(str(document['description']), 240)}"
+                )
             excerpt = clean_text(str(document.get("excerpt") or ""))
             if excerpt:
                 lines.append(f"   Content: {truncate_text(excerpt, 900)}")
             if document.get("headings"):
-                lines.append(f"   Headings: {list_as_text(document['headings'], limit=6)}")
+                lines.append(
+                    f"   Headings: {list_as_text(document['headings'], limit=6)}"
+                )
             if document.get("links"):
                 lines.append("   Links:")
                 for link in document["links"][:4]:
@@ -1258,7 +1400,12 @@ class SearxngMCPService:
         try:
             normalized = normalize_requested_url(url)
         except ValueError as exc:
-            return make_result(str(exc), structured={"error": str(exc)}, meta={"error": str(exc)}, is_error=True)
+            return make_result(
+                str(exc),
+                structured={"error": str(exc)},
+                meta={"error": str(exc)},
+                is_error=True,
+            )
 
         excerpt_limit = max_excerpt_chars or self.settings.default_excerpt_chars
         try:
@@ -1270,7 +1417,12 @@ class SearxngMCPService:
                 render_wait_ms=render_wait_ms,
                 ttl=ttl,
             )
-        except (BackendRequestError, RenderedFetchError, httpx.HTTPError, ValueError) as exc:
+        except (
+            BackendRequestError,
+            RenderedFetchError,
+            httpx.HTTPError,
+            ValueError,
+        ) as exc:
             return make_result(
                 f"fetch_url failed: {exc}",
                 structured={"error": str(exc), "url": normalized},
@@ -1287,7 +1439,9 @@ class SearxngMCPService:
             elapsed_ms=round(outcome.elapsed_ms, 2),
         )
 
-        text, structured, meta = self._render_fetch(outcome, max_excerpt_chars=excerpt_limit, max_links=max_links)
+        text, structured, meta = self._render_fetch(
+            outcome, max_excerpt_chars=excerpt_limit, max_links=max_links
+        )
         return make_result(text, structured=structured, meta=meta)
 
     async def fetch_many(
@@ -1305,7 +1459,9 @@ class SearxngMCPService:
         clean_urls: list[str] = []
         seen_urls: set[str] = set()
         errors: list[dict[str, Any]] = []
-        effective_render_wait_ms = self.settings.render_wait_ms if render_wait_ms is None else render_wait_ms
+        effective_render_wait_ms = (
+            self.settings.render_wait_ms if render_wait_ms is None else render_wait_ms
+        )
         for raw_url in urls:
             try:
                 normalized = normalize_requested_url(raw_url)
@@ -1321,8 +1477,14 @@ class SearxngMCPService:
         if not clean_urls:
             return make_result(
                 "fetch_many failed: at least one valid URL is required",
-                structured={"error": "at least one valid URL is required", "url_errors": errors},
-                meta={"error": "at least one valid URL is required", "url_errors": errors},
+                structured={
+                    "error": "at least one valid URL is required",
+                    "url_errors": errors,
+                },
+                meta={
+                    "error": "at least one valid URL is required",
+                    "url_errors": errors,
+                },
                 is_error=True,
             )
 
@@ -1333,7 +1495,9 @@ class SearxngMCPService:
 
         async def run_url(index: int, normalized_url: str) -> FetchOutcome | None:
             try:
-                await _ctx_report_progress(ctx, index, len(clean_urls), f"fetching {normalized_url}")
+                await _ctx_report_progress(
+                    ctx, index, len(clean_urls), f"fetching {normalized_url}"
+                )
                 return await self._fetch_once(
                     url=normalized_url,
                     max_excerpt_chars=excerpt_limit,
@@ -1350,7 +1514,9 @@ class SearxngMCPService:
         while pending:
             batch = pending[:limit]
             pending = pending[limit:]
-            batch_outcomes = await asyncio.gather(*(run_url(index, url) for index, url in batch))
+            batch_outcomes = await asyncio.gather(
+                *(run_url(index, url) for index, url in batch)
+            )
             for item in batch_outcomes:
                 if item is not None:
                     outcomes.append(item)
@@ -1380,8 +1546,17 @@ class SearxngMCPService:
             }
             for outcome in outcomes
         ]
-        render_mode = _summarize_render_modes([item["render_mode"] for item in documents])
-        top_domains = Counter(domain_from_url(item["document"].get("final_url") or item["document"].get("url") or item["requested_url"]) for item in documents)
+        render_mode = _summarize_render_modes(
+            [item["render_mode"] for item in documents]
+        )
+        top_domains = Counter(
+            domain_from_url(
+                item["document"].get("final_url")
+                or item["document"].get("url")
+                or item["requested_url"]
+            )
+            for item in documents
+        )
         text_lines = [
             f"URLs: {len(clean_urls)}",
             f"Successful: {len(outcomes)}",
@@ -1392,7 +1567,11 @@ class SearxngMCPService:
         if top_domains:
             text_lines.append(
                 "Top domains: "
-                + ", ".join(f"{domain} ({count})" for domain, count in top_domains.most_common(5) if domain)
+                + ", ".join(
+                    f"{domain} ({count})"
+                    for domain, count in top_domains.most_common(5)
+                    if domain
+                )
             )
         if errors:
             text_lines.append(f"URL errors: {len(errors)}")
@@ -1400,7 +1579,11 @@ class SearxngMCPService:
         text_lines.append("Fetched pages:")
         for index, item in enumerate(documents, start=1):
             document = item["document"]
-            title = document.get("title") or document.get("final_url") or item["requested_url"]
+            title = (
+                document.get("title")
+                or document.get("final_url")
+                or item["requested_url"]
+            )
             final_url = document.get("final_url") or item["requested_url"]
             text_lines.append(f"{index}. [{title}]({final_url})")
             text_lines.append(
@@ -1470,7 +1653,9 @@ class SearxngMCPService:
         hits, misses = self.cache.stats()
         render_status = self.render_client.status()
         configured_backends = 1 + len(self.settings.normalized_fallback_base_urls)
-        render_dependency = "installed" if render_status.get("playwright_installed") else "missing"
+        render_dependency = (
+            "installed" if render_status.get("playwright_installed") else "missing"
+        )
         render_browser = render_status.get("browser_executable") or "none"
         text = "\n".join(
             [
@@ -1484,7 +1669,12 @@ class SearxngMCPService:
                 f"cache entries: {len(self.cache)} | cache volume: {self.cache.volume()} bytes | hits: {hits} | misses: {misses}",
             ]
         )
-        await _ctx_info(ctx, "health check completed", backend=ping.backend_url, elapsed_ms=round(elapsed_ms, 2))
+        await _ctx_info(
+            ctx,
+            "health check completed",
+            backend=ping.backend_url,
+            elapsed_ms=round(elapsed_ms, 2),
+        )
         structured = {
             "ok": True,
             "backend_url": ping.backend_url,

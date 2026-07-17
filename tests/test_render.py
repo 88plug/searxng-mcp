@@ -26,4 +26,3 @@ def test_result_summary_line_contains_title_and_url() -> None:
 
 def test_approximate_tokens_returns_positive_count() -> None:
     assert approximate_tokens("hello world") > 0
-

@@ -51,7 +51,13 @@ def _is_valid_search_payload(payload: Any) -> bool:
     if any(not isinstance(item, dict) for item in results):
         return False
 
-    for key in ("answers", "corrections", "infoboxes", "suggestions", "unresponsive_engines"):
+    for key in (
+        "answers",
+        "corrections",
+        "infoboxes",
+        "suggestions",
+        "unresponsive_engines",
+    ):
         value = payload.get(key)
         if value is not None and not isinstance(value, list):
             return False
@@ -60,7 +66,11 @@ def _is_valid_search_payload(payload: Any) -> bool:
 
 def _should_fallback(error: BackendRequestError) -> bool:
     message = str(error).lower()
-    if "non-json" in message or "malformed" in message or "unexpected search payload" in message:
+    if (
+        "non-json" in message
+        or "malformed" in message
+        or "unexpected search payload" in message
+    ):
         return True
     if error.status_code is None:
         return True
@@ -73,12 +83,17 @@ class SearxngClient:
             max_connections=settings.search_connections,
             max_keepalive_connections=settings.search_keepalive,
         )
-        timeout = httpx.Timeout(settings.search_timeout, connect=min(settings.search_timeout, 5.0))
+        timeout = httpx.Timeout(
+            settings.search_timeout, connect=min(settings.search_timeout, 5.0)
+        )
         headers = {
             "Accept": "application/json",
             "User-Agent": settings.mcp_user_agent,
         }
-        base_urls = [settings.normalized_base_url, *settings.normalized_fallback_base_urls]
+        base_urls = [
+            settings.normalized_base_url,
+            *settings.normalized_fallback_base_urls,
+        ]
         self._backends: list[tuple[str, httpx.AsyncClient]] = []
         seen: set[str] = set()
         for base_url in base_urls:
@@ -103,9 +118,15 @@ class SearxngClient:
 
     @staticmethod
     def _clean_params(params: dict[str, Any]) -> dict[str, Any]:
-        return {key: value for key, value in params.items() if value not in (None, "", [], ())}
+        return {
+            key: value
+            for key, value in params.items()
+            if value not in (None, "", [], ())
+        }
 
-    async def _search_on_backend(self, backend_url: str, client: httpx.AsyncClient, params: dict[str, Any]) -> BackendResponse:
+    async def _search_on_backend(
+        self, backend_url: str, client: httpx.AsyncClient, params: dict[str, Any]
+    ) -> BackendResponse:
         cleaned = self._clean_params(params)
         started = time.perf_counter()
         try:
@@ -158,10 +179,14 @@ class SearxngClient:
                     raise
         if errors:
             message = "; ".join(str(error) for error in errors)
-            raise BackendRequestError(f"SearXNG search failed across backends: {message}")
+            raise BackendRequestError(
+                f"SearXNG search failed across backends: {message}"
+            )
         raise BackendRequestError("SearXNG search failed: no backends configured")
 
-    async def _ping_backend(self, backend_url: str, client: httpx.AsyncClient) -> BackendResponse:
+    async def _ping_backend(
+        self, backend_url: str, client: httpx.AsyncClient
+    ) -> BackendResponse:
         started = time.perf_counter()
         try:
             response = await client.get("/")
@@ -211,7 +236,9 @@ class FetchClient:
             max_connections=settings.fetch_connections,
             max_keepalive_connections=settings.fetch_keepalive,
         )
-        timeout = httpx.Timeout(settings.fetch_timeout, connect=min(settings.fetch_timeout, 5.0))
+        timeout = httpx.Timeout(
+            settings.fetch_timeout, connect=min(settings.fetch_timeout, 5.0)
+        )
         self._client = httpx.AsyncClient(
             follow_redirects=True,
             headers={

@@ -110,7 +110,9 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    base_url = _env("SEARXNG_MCP_BASE_URL", _env("SEARXNG_BASE_URL", "http://127.0.0.1:8890"))
+    base_url = _env(
+        "SEARXNG_MCP_BASE_URL", _env("SEARXNG_BASE_URL", "http://127.0.0.1:8890")
+    )
     fallback_base_urls = _env_csv("SEARXNG_MCP_FALLBACK_BASE_URLS")
     transport = _env("SEARXNG_MCP_TRANSPORT", "stdio").strip().lower()
     host = _env("SEARXNG_MCP_HOST", "127.0.0.1")

@@ -54,7 +54,9 @@ def make_settings(tmp_path: Path) -> Settings:
     )
 
 
-def make_http_response(url: str, body: str, content_type: str = "text/html; charset=utf-8") -> httpx.Response:
+def make_http_response(
+    url: str, body: str, content_type: str = "text/html; charset=utf-8"
+) -> httpx.Response:
     return httpx.Response(
         200,
         content=body.encode("utf-8"),
@@ -108,7 +110,9 @@ class FakeFetchClient:
     async def get(self, url: str) -> FetchResponse:
         self.calls.append(url)
         response = self.responses[url]
-        return FetchResponse(url=url, status_code=response.status_code, elapsed_ms=5.0, response=response)
+        return FetchResponse(
+            url=url, status_code=response.status_code, elapsed_ms=5.0, response=response
+        )
 
     async def close(self) -> None:
         return None
@@ -165,7 +169,9 @@ class AsyncStubContext:
         await asyncio.sleep(0)
         self.info_calls.append((message, dict(extra)))
 
-    async def report_progress(self, progress: float, total: float | None = None, message: str | None = None) -> None:
+    async def report_progress(
+        self, progress: float, total: float | None = None, message: str | None = None
+    ) -> None:
         await asyncio.sleep(0)
         self.progress_calls.append((progress, total, message))
 
@@ -179,14 +185,18 @@ class FastMCPLikeContext:
         self.log_calls = []
         self.progress_calls = []
 
-    async def log(self, level: str, message: str, *, logger_name: str | None = None) -> None:
+    async def log(
+        self, level: str, message: str, *, logger_name: str | None = None
+    ) -> None:
         await asyncio.sleep(0)
         self.log_calls.append((level, message))
 
     async def info(self, message: str, **extra: object) -> None:
         await self.log("info", message, **extra)
 
-    async def report_progress(self, progress: float, total: float | None = None, message: str | None = None) -> None:
+    async def report_progress(
+        self, progress: float, total: float | None = None, message: str | None = None
+    ) -> None:
         await asyncio.sleep(0)
         self.progress_calls.append((progress, total, message))
 
@@ -236,7 +246,11 @@ def test_search_caches_and_returns_compact_summary(tmp_path: Path) -> None:
             )
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=search_client, fetch_client=FakeFetchClient({}))
+    service = SearxngMCPService(
+        make_settings(tmp_path),
+        search_client=search_client,
+        fetch_client=FakeFetchClient({}),
+    )
 
     async def run() -> None:
         first = await service.search(query="python asyncio gather", max_results=1)
@@ -247,7 +261,9 @@ def test_search_caches_and_returns_compact_summary(tmp_path: Path) -> None:
         assert first.structuredContent["backend_url"] == "http://searx.local"
         assert second.structuredContent["cache_hit"] is True
         assert "Results: 2 total, 1 shown" in first.content[0].text
-        assert first.structuredContent["top_results"][0]["title"] == "Coroutines and tasks"
+        assert (
+            first.structuredContent["top_results"][0]["title"] == "Coroutines and tasks"
+        )
         assert len(search_client.calls) == 1
 
     import asyncio
@@ -269,11 +285,17 @@ def test_search_tolerates_fastmcp_context_log_signature_bug(tmp_path: Path) -> N
             )
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=search_client, fetch_client=FakeFetchClient({}))
+    service = SearxngMCPService(
+        make_settings(tmp_path),
+        search_client=search_client,
+        fetch_client=FakeFetchClient({}),
+    )
     ctx = FastMCPLikeContext()
 
     async def run() -> None:
-        result = await service.search(query="python asyncio gather", max_results=1, ctx=ctx)
+        result = await service.search(
+            query="python asyncio gather", max_results=1, ctx=ctx
+        )
         assert not result.isError
         assert ctx.log_calls == [("info", "search completed")]
 
@@ -317,14 +339,23 @@ def test_search_many_dedupes_and_merges(tmp_path: Path) -> None:
             ),
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=search_client, fetch_client=FakeFetchClient({}))
+    service = SearxngMCPService(
+        make_settings(tmp_path),
+        search_client=search_client,
+        fetch_client=FakeFetchClient({}),
+    )
 
     async def run() -> None:
-        result = await service.search_many(queries=["python asyncio gather", "python taskgroup"], max_results=10)
+        result = await service.search_many(
+            queries=["python asyncio gather", "python taskgroup"], max_results=10
+        )
         assert not result.isError
         assert "Queries: 2" in result.content[0].text
         assert result.structuredContent["unique_results"] == 3
-        assert result.structuredContent["merged_results"][0]["canonical_url"] == "https://docs.python.org/3/library/asyncio-task.html"
+        assert (
+            result.structuredContent["merged_results"][0]["canonical_url"]
+            == "https://docs.python.org/3/library/asyncio-task.html"
+        )
 
     import asyncio
 
@@ -354,11 +385,19 @@ def test_async_context_callbacks_are_awaited(tmp_path: Path) -> None:
             ),
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=search_client, fetch_client=FakeFetchClient({}))
+    service = SearxngMCPService(
+        make_settings(tmp_path),
+        search_client=search_client,
+        fetch_client=FakeFetchClient({}),
+    )
     ctx = AsyncStubContext()
 
     async def run() -> None:
-        result = await service.search_many(queries=["python asyncio gather", "python taskgroup"], max_results=5, ctx=ctx)
+        result = await service.search_many(
+            queries=["python asyncio gather", "python taskgroup"],
+            max_results=5,
+            ctx=ctx,
+        )
         assert not result.isError
         assert len(ctx.progress_calls) == 2
         assert len(ctx.info_calls) == 1
@@ -369,7 +408,9 @@ def test_async_context_callbacks_are_awaited(tmp_path: Path) -> None:
     asyncio.run(run())
 
 
-def test_research_merges_search_and_batch_fetch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_research_merges_search_and_batch_fetch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     search_client = FakeSearchClient(
         {
             "python asyncio gather": payload_for(
@@ -428,7 +469,9 @@ def test_research_merges_search_and_batch_fetch(tmp_path: Path, monkeypatch: pyt
             ),
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=search_client, fetch_client=fetch_client)
+    service = SearxngMCPService(
+        make_settings(tmp_path), search_client=search_client, fetch_client=fetch_client
+    )
     fetch_many_calls: list[list[str]] = []
 
     async def fake_fetch_many(*, urls: list[str], **_: object):
@@ -473,14 +516,23 @@ def test_research_merges_search_and_batch_fetch(tmp_path: Path, monkeypatch: pyt
     monkeypatch.setattr(service, "fetch_many", fake_fetch_many)
 
     async def run() -> None:
-        result = await service.research(queries=["python asyncio gather", "python taskgroup"], max_results=5, fetch_limit=2)
+        result = await service.research(
+            queries=["python asyncio gather", "python taskgroup"],
+            max_results=5,
+            fetch_limit=2,
+        )
         assert not result.isError
         assert "Merged results:" in result.content[0].text
         assert "Fetched sources:" in result.content[0].text
         assert result.structuredContent["unique_results"] == 3
         assert len(result.structuredContent["fetched_pages"]) == 2
         assert len(search_client.calls) == 2
-        assert fetch_many_calls == [["https://docs.python.org/3/library/asyncio-task.html?utm_source=test", "https://example.com/b"]]
+        assert fetch_many_calls == [
+            [
+                "https://docs.python.org/3/library/asyncio-task.html?utm_source=test",
+                "https://example.com/b",
+            ]
+        ]
 
     import asyncio
 
@@ -506,20 +558,32 @@ def test_fetch_url_extracts_and_caches(tmp_path: Path) -> None:
     """
     fetch_client = FakeFetchClient(
         {
-            "https://example.org/article": make_http_response("https://example.org/article", html),
+            "https://example.org/article": make_http_response(
+                "https://example.org/article", html
+            ),
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=FakeSearchClient({}), fetch_client=fetch_client)
+    service = SearxngMCPService(
+        make_settings(tmp_path),
+        search_client=FakeSearchClient({}),
+        fetch_client=fetch_client,
+    )
 
     async def run() -> None:
-        first = await service.fetch_url(url="https://example.org/article", max_excerpt_chars=20, max_links=1)
-        second = await service.fetch_url(url="https://example.org/article", max_excerpt_chars=120, max_links=2)
+        first = await service.fetch_url(
+            url="https://example.org/article", max_excerpt_chars=20, max_links=1
+        )
+        second = await service.fetch_url(
+            url="https://example.org/article", max_excerpt_chars=120, max_links=2
+        )
         assert not first.isError
         assert first.structuredContent["cache_hit"] is False
         assert second.structuredContent["cache_hit"] is True
         assert first.structuredContent["title"] == "Example Article"
         assert "Heading One" in first.content[0].text
-        assert len(second.structuredContent["excerpt"]) > len(first.structuredContent["excerpt"])
+        assert len(second.structuredContent["excerpt"]) > len(
+            first.structuredContent["excerpt"]
+        )
         assert len(first.structuredContent["links"]) == 1
         assert len(second.structuredContent["links"]) == 2
         assert len(fetch_client.calls) == 1
@@ -561,8 +625,20 @@ def test_fetch_url_rendered_extracts_and_caches(tmp_path: Path) -> None:
     )
 
     async def run() -> None:
-        first = await service.fetch_url(url="https://example.org/rendered", rendered=True, render_wait_ms=250, max_excerpt_chars=40, max_links=1)
-        second = await service.fetch_url(url="https://example.org/rendered", rendered=True, render_wait_ms=250, max_excerpt_chars=120, max_links=2)
+        first = await service.fetch_url(
+            url="https://example.org/rendered",
+            rendered=True,
+            render_wait_ms=250,
+            max_excerpt_chars=40,
+            max_links=1,
+        )
+        second = await service.fetch_url(
+            url="https://example.org/rendered",
+            rendered=True,
+            render_wait_ms=250,
+            max_excerpt_chars=120,
+            max_links=2,
+        )
         assert not first.isError
         assert first.structuredContent["rendered"] is True
         assert first.structuredContent["render_mode"] == "forced"
@@ -571,7 +647,9 @@ def test_fetch_url_rendered_extracts_and_caches(tmp_path: Path) -> None:
         assert first.structuredContent["title"] == "Rendered Example"
         assert "Rendered Heading" in first.content[0].text
         assert "Rendered: forced" in first.content[0].text
-        assert len(second.structuredContent["excerpt"]) > len(first.structuredContent["excerpt"])
+        assert len(second.structuredContent["excerpt"]) > len(
+            first.structuredContent["excerpt"]
+        )
         assert len(first.structuredContent["links"]) == 1
         assert len(second.structuredContent["links"]) == 2
         assert render_client.calls == [("https://example.org/rendered", 250)]
@@ -596,7 +674,11 @@ def test_fetch_url_plain_fetch_failure_falls_back_to_render(tmp_path: Path) -> N
     service = SearxngMCPService(
         make_settings(tmp_path),
         search_client=FakeSearchClient({}),
-        fetch_client=FailingFetchClient(httpx.ConnectError("boom", request=httpx.Request("GET", "https://example.org/fallback"))),
+        fetch_client=FailingFetchClient(
+            httpx.ConnectError(
+                "boom", request=httpx.Request("GET", "https://example.org/fallback")
+            )
+        ),
         render_client=render_client,
     )
 
@@ -608,7 +690,10 @@ def test_fetch_url_plain_fetch_failure_falls_back_to_render(tmp_path: Path) -> N
         assert result.meta["render_mode"] == "auto"
         assert result.meta["document"]["rendered"] is True
         assert "Rendered: auto" in result.content[0].text
-        assert render_client.calls and render_client.calls[0][0] == "https://example.org/fallback"
+        assert (
+            render_client.calls
+            and render_client.calls[0][0] == "https://example.org/fallback"
+        )
 
     asyncio.run(run())
 
@@ -628,15 +713,27 @@ def test_fetch_many_dedupes_and_reuses_cache(tmp_path: Path) -> None:
     """
     fetch_client = FakeFetchClient(
         {
-            "https://example.org/a": make_http_response("https://example.org/a", html_a),
-            "https://example.org/b": make_http_response("https://example.org/b", html_b),
+            "https://example.org/a": make_http_response(
+                "https://example.org/a", html_a
+            ),
+            "https://example.org/b": make_http_response(
+                "https://example.org/b", html_b
+            ),
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=FakeSearchClient({}), fetch_client=fetch_client)
+    service = SearxngMCPService(
+        make_settings(tmp_path),
+        search_client=FakeSearchClient({}),
+        fetch_client=fetch_client,
+    )
 
     async def run() -> None:
         first = await service.fetch_many(
-            urls=["https://example.org/a", "https://example.org/a", "https://example.org/b"],
+            urls=[
+                "https://example.org/a",
+                "https://example.org/a",
+                "https://example.org/b",
+            ],
             max_excerpt_chars=40,
         )
         second = await service.fetch_many(
@@ -698,16 +795,24 @@ def test_fetch_many_auto_render_keeps_render_state_in_sync(tmp_path: Path) -> No
     )
 
     async def run() -> None:
-        result = await service.fetch_many(urls=["https://example.org/app"], max_excerpt_chars=80, max_links=1)
+        result = await service.fetch_many(
+            urls=["https://example.org/app"], max_excerpt_chars=80, max_links=1
+        )
         assert not result.isError
         assert result.structuredContent["rendered"] is True
         assert result.structuredContent["render_mode"] == "auto"
         assert result.meta["rendered"] is True
         assert result.meta["render_mode"] == "auto"
         assert result.structuredContent["documents"][0]["document"]["rendered"] is True
-        assert result.structuredContent["documents"][0]["document"]["render_mode"] == "auto"
+        assert (
+            result.structuredContent["documents"][0]["document"]["render_mode"]
+            == "auto"
+        )
         assert result.meta["documents"][0]["render_mode"] == "auto"
-        assert render_client.calls and render_client.calls[0][0] == "https://example.org/app"
+        assert (
+            render_client.calls
+            and render_client.calls[0][0] == "https://example.org/app"
+        )
 
     asyncio.run(run())
 
@@ -768,15 +873,25 @@ def test_search_and_fetch_rendered_marks_rendered_pages(tmp_path: Path) -> None:
     )
 
     async def run() -> None:
-        result = await service.search_and_fetch(query="python asyncio gather", fetch_limit=1)
+        result = await service.search_and_fetch(
+            query="python asyncio gather", fetch_limit=1
+        )
         assert not result.isError
         assert "Rendered fetch: auto" in result.content[0].text
         assert "Rendered: auto" in result.content[0].text
         assert result.structuredContent["rendered"] is True
         assert result.structuredContent["render_mode"] == "auto"
-        assert result.structuredContent["fetched_pages"][0]["document"]["rendered"] is True
-        assert result.structuredContent["fetched_pages"][0]["document"]["render_mode"] == "auto"
-        assert render_client.calls and render_client.calls[0][0] == "https://example.org/rendered"
+        assert (
+            result.structuredContent["fetched_pages"][0]["document"]["rendered"] is True
+        )
+        assert (
+            result.structuredContent["fetched_pages"][0]["document"]["render_mode"]
+            == "auto"
+        )
+        assert (
+            render_client.calls
+            and render_client.calls[0][0] == "https://example.org/rendered"
+        )
 
     asyncio.run(run())
 
@@ -808,15 +923,24 @@ def test_search_and_fetch_combines_search_and_extraction(tmp_path: Path) -> None
             )
         }
     )
-    service = SearxngMCPService(make_settings(tmp_path), search_client=search_client, fetch_client=fetch_client)
+    service = SearxngMCPService(
+        make_settings(tmp_path), search_client=search_client, fetch_client=fetch_client
+    )
 
     async def run() -> None:
-        result = await service.search_and_fetch(query="python asyncio gather", fetch_limit=1)
+        result = await service.search_and_fetch(
+            query="python asyncio gather", fetch_limit=1
+        )
         assert not result.isError
         assert "Fetched pages: 1" in result.content[0].text
         assert "Body text." in result.content[0].text
-        assert result.structuredContent["fetched_pages"][0]["document"]["title"] == "Example Article"
-        repeat = await service.search_and_fetch(query="python asyncio gather", fetch_limit=1)
+        assert (
+            result.structuredContent["fetched_pages"][0]["document"]["title"]
+            == "Example Article"
+        )
+        repeat = await service.search_and_fetch(
+            query="python asyncio gather", fetch_limit=1
+        )
         assert repeat.structuredContent["fetched_pages"][0]["cache_hit"] is True
         assert len(fetch_client.calls) == 1
 
@@ -838,7 +962,9 @@ def test_health_reports_backend_cache_and_render_support(tmp_path: Path) -> None
         assert not result.isError
         assert result.structuredContent["ok"] is True
         assert result.structuredContent["configured_backends"] == 1
-        assert result.structuredContent["render_support"]["playwright_installed"] is True
+        assert (
+            result.structuredContent["render_support"]["playwright_installed"] is True
+        )
         assert "render dependency: installed" in result.content[0].text
         assert "render auto fallback: enabled" in result.content[0].text
 

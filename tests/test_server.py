@@ -30,19 +30,36 @@ def test_server_exposes_guide_resource_and_research_prompts(tmp_path: Path) -> N
     assert guide["operating_mode"]["orchestration"] == "agent-driven"
     assert guide["operating_mode"]["primary_interface"] == "tools"
     assert guide["tool_selection"]["search_and_fetch"]
-    assert guide["prompt_compatibility"]["quick_lookup"].startswith("Optional helper prompt")
+    assert guide["prompt_compatibility"]["quick_lookup"].startswith(
+        "Optional helper prompt"
+    )
     assert guide["default_behavior"]["default_interface"] == "tools"
     assert guide["default_behavior"]["raw_payload"] == "hidden in _meta"
 
-    quick_prompt = asyncio.run(bundle.server.get_prompt("quick_lookup", {"topic": "python asyncio", "intent": "summary"}))
+    quick_prompt = asyncio.run(
+        bundle.server.get_prompt(
+            "quick_lookup", {"topic": "python asyncio", "intent": "summary"}
+        )
+    )
     assert len(quick_prompt.messages) == 1
     assert "Quick lookup topic: python asyncio" in quick_prompt.messages[0].content.text
     assert "search_and_fetch" in quick_prompt.messages[0].content.text
 
-    deep_prompt = asyncio.run(bundle.server.get_prompt("deep_research", {"topic": "python asyncio", "scope": "wide"}))
+    deep_prompt = asyncio.run(
+        bundle.server.get_prompt(
+            "deep_research", {"topic": "python asyncio", "scope": "wide"}
+        )
+    )
     assert len(deep_prompt.messages) == 1
-    assert "Preferred workflow: search_many -> research -> fetch_many" in deep_prompt.messages[0].content.text
+    assert (
+        "Preferred workflow: search_many -> research -> fetch_many"
+        in deep_prompt.messages[0].content.text
+    )
 
-    router_prompt = asyncio.run(bundle.server.get_prompt("research_workflow", {"topic": "python asyncio", "depth": "quick"}))
+    router_prompt = asyncio.run(
+        bundle.server.get_prompt(
+            "research_workflow", {"topic": "python asyncio", "depth": "quick"}
+        )
+    )
     assert len(router_prompt.messages) == 1
     assert "quick_lookup" in router_prompt.messages[0].content.text

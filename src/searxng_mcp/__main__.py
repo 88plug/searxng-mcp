@@ -8,12 +8,20 @@ from .settings import load_settings
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="searxng-mcp", description="Fast token-efficient MCP server for SearXNG")
-    parser.add_argument("--transport", choices=["stdio", "streamable-http", "sse"], default=None)
+    parser = argparse.ArgumentParser(
+        prog="searxng-mcp", description="Fast token-efficient MCP server for SearXNG"
+    )
+    parser.add_argument(
+        "--transport", choices=["stdio", "streamable-http", "sse"], default=None
+    )
     parser.add_argument("--base-url", default=None)
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
-    parser.add_argument("--mount-path", default=None, help="Optional path prefix for streamable-http or SSE deployments.")
+    parser.add_argument(
+        "--mount-path",
+        default=None,
+        help="Optional path prefix for streamable-http or SSE deployments.",
+    )
     parser.add_argument("--cache-dir", default=None)
     parser.add_argument("--search-timeout", type=float, default=None)
     parser.add_argument("--fetch-timeout", type=float, default=None)

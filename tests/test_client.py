@@ -80,7 +80,9 @@ def test_search_falls_back_to_secondary_backend(tmp_path: Path) -> None:
             return httpx.Response(200, request=request, text="ok")
         return httpx.Response(404, request=request, text="not found")
 
-    client = SearxngClient(make_settings(tmp_path), transport=httpx.MockTransport(handler))
+    client = SearxngClient(
+        make_settings(tmp_path), transport=httpx.MockTransport(handler)
+    )
 
     async def run() -> None:
         result = await client.search(
@@ -135,7 +137,9 @@ def test_search_falls_back_when_primary_unreachable(tmp_path: Path) -> None:
             return httpx.Response(200, request=request, text="ok")
         return httpx.Response(404, request=request, text="not found")
 
-    client = SearxngClient(make_settings(tmp_path), transport=httpx.MockTransport(handler))
+    client = SearxngClient(
+        make_settings(tmp_path), transport=httpx.MockTransport(handler)
+    )
 
     async def run() -> None:
         result = await client.search(

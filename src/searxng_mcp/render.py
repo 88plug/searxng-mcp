@@ -49,7 +49,8 @@ def _scheme_and_netloc(url: str) -> tuple[str, str, str, str, str]:
     query_items = [
         (key, value)
         for key, value in parse_qsl(parsed.query, keep_blank_values=True)
-        if not key.lower().startswith(_TRACKING_PREFIXES) and key.lower() not in _TRACKING_KEYS
+        if not key.lower().startswith(_TRACKING_PREFIXES)
+        and key.lower() not in _TRACKING_KEYS
     ]
     query = urlencode(query_items, doseq=True)
     return scheme, netloc, path, query, ""
@@ -165,4 +166,3 @@ def make_result(
         _meta=meta,
         isError=is_error,
     )
-

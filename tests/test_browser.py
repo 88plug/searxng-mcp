@@ -107,7 +107,9 @@ class FakePlaywrightStarter:
         return self.runtime
 
 
-def test_render_client_auto_installs_playwright_browser(tmp_path: Path, monkeypatch) -> None:
+def test_render_client_auto_installs_playwright_browser(
+    tmp_path: Path, monkeypatch
+) -> None:
     from searxng_mcp import browser as browser_module
 
     runtime = FakePlaywrightRuntime()
@@ -116,7 +118,9 @@ def test_render_client_auto_installs_playwright_browser(tmp_path: Path, monkeypa
     def fake_async_playwright() -> FakePlaywrightStarter:
         return FakePlaywrightStarter(runtime)
 
-    def fake_run(command: list[str], *, check: bool, capture_output: bool, text: bool) -> subprocess.CompletedProcess[str]:
+    def fake_run(
+        command: list[str], *, check: bool, capture_output: bool, text: bool
+    ) -> subprocess.CompletedProcess[str]:
         assert check is True
         assert capture_output is True
         assert text is True
@@ -133,6 +137,8 @@ def test_render_client_auto_installs_playwright_browser(tmp_path: Path, monkeypa
     assert context.timeout_ms == 10000
     assert context.routes == ["**/*"]
     assert runtime.chromium.launch_calls == 2
-    assert install_calls == [[sys.executable, "-m", "playwright", "install", "chromium"]]
+    assert install_calls == [
+        [sys.executable, "-m", "playwright", "install", "chromium"]
+    ]
 
     asyncio.run(client.close())
