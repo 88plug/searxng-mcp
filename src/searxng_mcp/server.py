@@ -300,11 +300,12 @@ READ_ONLY_FETCH = ToolAnnotations(
     openWorldHint=True,
 )
 
+# health() network-pings the SearXNG backend — openWorld must be True (same class as search/fetch).
 READ_ONLY_HEALTH = ToolAnnotations(
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=True,
-    openWorldHint=False,
+    openWorldHint=True,
 )
 
 
