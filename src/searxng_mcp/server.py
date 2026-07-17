@@ -357,7 +357,15 @@ def create_server(settings: Settings) -> MCPBundle:
             "render_auto_min_words": settings.render_auto_min_words,
             "render_auto_min_chars": settings.render_auto_min_chars,
             "render_support": service.render_client.status(),
-            "tools": ["search", "search_many", "search_and_fetch", "research", "fetch_url", "fetch_many", "health"],
+            "tools": [
+                "search",
+                "search_many",
+                "search_and_fetch",
+                "research",
+                "fetch_url",
+                "fetch_many",
+                "health",
+            ],
         }
 
     @server.resource(
@@ -420,10 +428,15 @@ def create_server(settings: Settings) -> MCPBundle:
         description="Seed the fastest single-question workflow.",
     )
     def quick_lookup(
-        topic: Annotated[str, Field(min_length=1, description="The topic or question to look up.")],
+        topic: Annotated[
+            str, Field(min_length=1, description="The topic or question to look up.")
+        ],
         intent: Annotated[
             Literal["facts", "links", "citations", "summary"],
-            Field(default="facts", description="Output emphasis: 'facts', 'links', 'citations', or 'summary'."),
+            Field(
+                default="facts",
+                description="Output emphasis: 'facts', 'links', 'citations', or 'summary'.",
+            ),
         ] = "facts",
     ) -> str:
         return (
@@ -440,10 +453,15 @@ def create_server(settings: Settings) -> MCPBundle:
         description="Seed the broader multi-query research workflow.",
     )
     def deep_research(
-        topic: Annotated[str, Field(min_length=1, description="The topic or question to research.")],
+        topic: Annotated[
+            str, Field(min_length=1, description="The topic or question to research.")
+        ],
         scope: Annotated[
             Literal["focused", "broad", "wide"],
-            Field(default="broad", description="Breadth: 'focused' (few queries), 'broad' (default), or 'wide' (many queries)."),
+            Field(
+                default="broad",
+                description="Breadth: 'focused' (few queries), 'broad' (default), or 'wide' (many queries).",
+            ),
         ] = "broad",
     ) -> str:
         if scope == "focused":
@@ -451,7 +469,9 @@ def create_server(settings: Settings) -> MCPBundle:
             extra = "Use a few query variants to widen coverage before fetching the strongest sources."
         elif scope == "wide":
             workflow = "search_many -> research -> fetch_many"
-            extra = "Use more query variants and compare multiple sources before deciding."
+            extra = (
+                "Use more query variants and compare multiple sources before deciding."
+            )
         else:
             workflow = "research"
             extra = "Use merged multi-query search, then fetch the top sources with citations."
@@ -470,10 +490,16 @@ def create_server(settings: Settings) -> MCPBundle:
         description="Compatibility router that chooses quick_lookup or deep_research.",
     )
     def research_workflow(
-        topic: Annotated[str, Field(min_length=1, description="The topic or question to investigate.")],
+        topic: Annotated[
+            str,
+            Field(min_length=1, description="The topic or question to investigate."),
+        ],
         depth: Annotated[
             Literal["quick", "broad", "deep"],
-            Field(default="deep", description="Depth router: 'quick' for a fact lookup, 'broad' or 'deep' for multi-source research."),
+            Field(
+                default="deep",
+                description="Depth router: 'quick' for a fact lookup, 'broad' or 'deep' for multi-source research.",
+            ),
         ] = "deep",
     ) -> str:
         if depth == "quick":
