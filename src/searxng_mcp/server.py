@@ -588,8 +588,8 @@ def create_server(settings: Settings) -> MCPBundle:
         description=(
             "Search SearXNG for one query and fetch+extract the top results in a single call. "
             "Combines `search` and `fetch_many` for one-query research workflows.\n"
-            "Best for: answering one question that needs evidence from full pages, building a "
-            "citation-backed answer to a single prompt, getting both ranked results and readable "
+            "Use when answering one question that needs evidence from full pages, building a "
+            "citation-backed answer to a single prompt, or getting both ranked results and readable "
             "excerpts in one round-trip.\n"
             "Returns: search summary plus per-source `{title, url, excerpt, citations, render_mode}`. "
             "The full SearXNG payload and per-page full text are in hidden `_meta`.\n"
@@ -732,7 +732,7 @@ def create_server(settings: Settings) -> MCPBundle:
         description=(
             "Fetch and extract several URLs in parallel. URLs are deduplicated after canonicalisation. "
             "Each per-source full text is preserved in hidden `_meta.pages[].full_text`.\n"
-            "Best for: reading a batch of search results, comparing several known sources, building "
+            "Use when reading a batch of search results, comparing several known sources, or building "
             "a multi-source citation set.\n"
             "Returns: per-source `{title, url, excerpt, citations, render_mode}` and aggregate "
             "stats (success_count, error_count, elapsed_ms).\n"
@@ -768,8 +768,8 @@ def create_server(settings: Settings) -> MCPBundle:
         title="Health",
         description=(
             "Report backend, cache, and render-engine readiness. Takes no arguments.\n"
-            "Best for: a one-shot check before a session, debugging a 'search failed' result, "
-            "verifying that the SearXNG backend is reachable and that rendered fetch is available.\n"
+            "Use for a one-shot check before a session, debugging a 'search failed' result, "
+            "or verifying that the SearXNG backend is reachable and that rendered fetch is available.\n"
             "Returns: `{backend, cache, render}` with status, latency, and any active fallback URLs."
         ),
         annotations=READ_ONLY_HEALTH,
