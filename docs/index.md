@@ -6,6 +6,7 @@ Token-efficient MCP server for SearXNG metasearch — private web search and pag
 [![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue?style=flat)](https://github.com/88plug/searxng-mcp/blob/main/LICENSE)
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2?style=flat)](https://github.com/88plug/claude-code-plugins)
 [![GitHub](https://img.shields.io/badge/GitHub-88plug%2Fsearxng--mcp-181717?style=flat&logo=github)](https://github.com/88plug/searxng-mcp)
+[![Docs](https://img.shields.io/badge/docs-online-blue?style=flat)](https://88plug.github.io/searxng-mcp/)
 
 Connect your SearXNG instance to an LLM. You get search, multi-query research, and readable page extraction as MCP tools. Model-visible output stays short; full payloads live in hidden `_meta`.
 
@@ -65,7 +66,7 @@ Also exposed:
 - Resources: `searxng://config`, `searxng://guide`
 - Prompts (compatibility): `quick_lookup`, `deep_research`, `research_workflow`
 
-Full parameter tables live in the [Tool Reference](reference/tools.md).
+Full parameter tables live in the [Tool Reference](https://github.com/88plug/searxng-mcp/blob/main/reference/tools.md).
 
 ## Why this shape
 
@@ -79,8 +80,38 @@ Full parameter tables live in the [Tool Reference](reference/tools.md).
 
 ## Where next
 
-- [Getting Started](getting-started.md) — shortest path from SearXNG to a working MCP server
-- [Installation](installation.md) — plugin, uvx, source, Docker
-- [Configuration](configuration.md) — env vars and CLI flags
-- [Client Configs](reference/client-configs.md) — Claude Desktop, Codex, gemini-cli, opencode
-- [Deployment](deployment.md) / [Security](security.md) — HTTP exposure and hardening
+- [Getting Started](https://github.com/88plug/searxng-mcp/blob/main/getting-started.md) — shortest path from SearXNG to a working MCP server
+- [Installation](https://github.com/88plug/searxng-mcp/blob/main/installation.md) — plugin, uvx, source, Docker
+- [Configuration](https://github.com/88plug/searxng-mcp/blob/main/configuration.md) — env vars and CLI flags
+- [Client Configs](https://github.com/88plug/searxng-mcp/blob/main/reference/client-configs.md) — Claude Desktop, Codex, gemini-cli, opencode
+- [Deployment](https://github.com/88plug/searxng-mcp/blob/main/deployment.md) / [Security](https://github.com/88plug/searxng-mcp/blob/main/security.md) — HTTP exposure and hardening
+
+## Features
+
+| Feature | Detail |
+| --- | --- |
+| Token-efficient MCP tools | Compact model-visible output; full payloads in hidden `_meta` |
+| Parallel research | Multi-query search and fetch fan-out with dedupe and merged ranking |
+| Rendered extraction | Playwright/Chromium path for JS-heavy pages; no extra install flags |
+| Self-hosted deployment | stdio, streamable-http, SSE, Docker, and Compose for private MCP services |
+| Thin by design | SearXNG does the search; this server shapes tools, cache, extract, transport |
+
+## Development
+
+From a checkout:
+
+```bash
+uv sync
+uv run searxng-mcp
+```
+
+Build and test:
+
+```bash
+uv sync --all-groups
+uv run pytest -q
+uv run python -m compileall src
+uv run mkdocs build --strict
+```
+
+Contributions welcome. See [CONTRIBUTING.md](https://github.com/88plug/searxng-mcp/blob/main/CONTRIBUTING.md) and the [code of conduct](https://github.com/88plug/searxng-mcp/blob/main/CODE_OF_CONDUCT.md).

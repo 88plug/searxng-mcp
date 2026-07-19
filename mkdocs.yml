@@ -1,5 +1,5 @@
 site_name: searxng-mcp
-site_description: Token-efficient MCP server for SearXNG metasearch — private web search and page extraction for Claude Code and any MCP client.
+site_description: 'MCP server for SearXNG — privacy-respecting web search and page extraction for Claude Code, AI agents, and any MCP client.'
 site_author: 88plug
 site_url: https://88plug.github.io/searxng-mcp/
 repo_url: https://github.com/88plug/searxng-mcp
