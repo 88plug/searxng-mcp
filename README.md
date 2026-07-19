@@ -2,7 +2,7 @@
 
 # searxng-mcp
 
-MCP server for SearXNG — privacy-respecting web search and page extraction for Claude Code, AI agents, and any MCP client.
+SearXNG search MCP for Claude Code and Grok — privacy-respecting web search and page extraction for AI agents and any MCP client.
 
 [![plugin-validate](https://github.com/88plug/searxng-mcp/actions/workflows/plugin-validate.yml/badge.svg)](https://github.com/88plug/searxng-mcp/actions/workflows/plugin-validate.yml)
 [![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue?style=flat)](LICENSE)
