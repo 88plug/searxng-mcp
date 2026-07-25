@@ -10,7 +10,7 @@ jobs:
   validate:
     runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - name: Install zsh (for shell-portability checks)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
       - uses: actions/setup-python@v6.3.0
