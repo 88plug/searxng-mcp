@@ -35,7 +35,7 @@ classifiers = [
 ]
 urls = { Homepage = "https://github.com/88plug/searxng-mcp", Repository = "https://github.com/88plug/searxng-mcp", Documentation = "https://88plug.github.io/searxng-mcp", Changelog = "https://github.com/88plug/searxng-mcp/blob/main/CHANGELOG.md", Issues = "https://github.com/88plug/searxng-mcp/issues" }
 dependencies = [
-  "mcp>=1.28.0",
+  "mcp>=2.1.1",
   "httpx[http2]>=0.28.1",
   "beautifulsoup4>=4.15.0",
   "lxml>=6.1.1",
