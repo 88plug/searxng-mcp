@@ -43,7 +43,7 @@ dependencies = [
   "orjson>=3.11.9",
   "pdfminer.six>=20250506",
   "playwright>=1.61.0",
-  "tiktoken>=0.13.0",
+  "tiktoken>=0.14.0",
   "uvicorn>=0.51.0",
 ]
 
